@@ -48,6 +48,7 @@
                     <button type="button" onclick="history.back()" 
                             class="px-8 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200 transition">
                         Cancel
+                        
                     </button>
                 </div>
             </form>
