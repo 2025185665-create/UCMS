@@ -6,6 +6,7 @@
     <title>UCMS - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+     <link rel="stylesheet" href="css/style.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .ucms-layout { display: flex; min-height: 100vh; }
@@ -86,5 +87,16 @@
             }
         }
     </script>
+    <!-- Footer -->
+<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+    <div class="max-w-7xl mx-auto px-4">
+        <p>
+            &copy; <%= java.time.Year.now() %> University Club Management System. 
+            All rights reserved.
+        </p>
+        <p class="mt-1">Made with ❤️ for university students</p>
+    </div>
+</footer>
+
 </body>
 </html>

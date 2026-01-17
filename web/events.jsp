@@ -247,5 +247,16 @@
         else { details.classList.add('hidden'); }
     }
     </script>
+    <!-- Footer -->
+<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+    <div class="max-w-7xl mx-auto px-4">
+        <p>
+            &copy; <%= java.time.Year.now() %> University Club Management System. 
+            All rights reserved.
+        </p>
+        <p class="mt-1">Made with ❤️ for university students</p>
+    </div>
+</footer>
+
 </body>
 </html>
