@@ -6,17 +6,41 @@
     <title>UCMS - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .ucms-layout { display: flex; min-height: 100vh; }
         .ucms-left-panel { flex: 1; display: flex; align-items: center; justify-content: center; background: white; }
-        .ucms-right-panel { flex: 1.2; position: relative; background-image: url('https://images.unsplash.com/photo-1541339907198-e08756ebafe3?auto=format&fit=crop&w=1200&q=80'); background-size: cover; background-position: center; }
+        
+        /* High-Res Sharpness Fix */
+        .ucms-right-panel { 
+            flex: 1.2; 
+            position: relative; 
+            background-image: url('img/background.jpg'); 
+            background-size: cover; 
+            background-position: center;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: high-quality;
+        }
+        
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(30, 41, 59, 0.45); 
+            z-index: 1;
+        }
+        
+        .panel-content {
+            position: relative;
+            z-index: 10;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
-<body class="bg-gray-50">
+<body class="bg-gray-50 flex flex-col min-h-screen">
     <% String error = request.getParameter("error"); String success = request.getParameter("success"); %>
-    <div class="ucms-layout">
+    
+    <div class="ucms-layout flex-grow">
         <div class="ucms-left-panel">
             <div class="p-8 max-w-md w-full mx-auto">
                 <div class="mb-6">
@@ -52,15 +76,21 @@
             </div>
         </div>
 
-        <div class="ucms-right-panel hidden lg:block">
-            <div class="absolute inset-0 bg-[#3a5d6a]/70 backdrop-blur-[2px]"></div>
-            <div class="relative h-full flex flex-col justify-center items-center text-white p-12 text-center">
+        <div class="ucms-right-panel hidden lg:flex items-center justify-center">
+            <div class="overlay"></div>
+            <div class="panel-content text-white text-center p-12">
                 <p class="text-6xl font-black uppercase tracking-tighter leading-none">Welcome Back</p>
-                <div class="w-16 h-1 bg-white/40 my-6"></div>
-                <p class="text-xl font-light opacity-90">Access your profile and manage club activities.</p>
+                <div class="w-16 h-1 bg-white/40 mx-auto my-6"></div>
+                <p class="text-xl font-light opacity-95">Access your profile and manage club activities.</p>
             </div>
         </div>
     </div>
+
+    <footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; <%= java.time.Year.now() %> UCMS. All rights reserved.</p>
+        </div>
+    </footer>
 
     <script>
         function switchRole(role) {
@@ -87,16 +117,5 @@
             }
         }
     </script>
-    <!-- Footer -->
-<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
-    <div class="max-w-7xl mx-auto px-4">
-        <p>
-            &copy; <%= java.time.Year.now() %> University Club Management System. 
-            All rights reserved.
-        </p>
-        <p class="mt-1">Made with ❤️ for university students</p>
-    </div>
-</footer>
-
 </body>
 </html>

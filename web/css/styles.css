@@ -1,5 +1,5 @@
 :root {
-    --color-primary: #2563eb; /* Modern Blue */
+    --color-primary: #2563eb; 
     --color-secondary: #4E869B;
     --color-background: #f8fafc;
     --color-card: #ffffff;
@@ -71,7 +71,7 @@ body {
 
 /* --- UI ELEMENTS --- */
 
-/* Modern Stat Cards (The ones on your dashboard) */
+/* Modern Stat Cards */
 .stat-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -138,10 +138,6 @@ body {
     font-size: 0.935rem;
 }
 
-.ucms-table tr:last-child td {
-    border-bottom: none;
-}
-
 /* Action Buttons */
 .btn-primary {
     background: var(--color-primary);
@@ -154,23 +150,35 @@ body {
     transition: opacity 0.2s;
 }
 
-.btn-outline {
-    background: transparent;
-    border: 2px solid #e2e8f0;
-    color: var(--color-text-main);
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-/* Intro/Login Overrides (Keeping your split panels) */
+/* --- INTRO / WELCOME PAGE FIXES --- */
 .ucms-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex; 
     min-height: 100vh;
+    width: 100%;
 }
 
-@media (max-width: 768px) {
-    .ucms-layout { grid-template-columns: 1fr; }
-    .sidebar { display: none; } /* Mobile would need a toggle */
+.ucms-left-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+}
+
+.ucms-right-panel {
+    flex: 1.2;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center top; /* Adjust to 'center' if you want more middle detail */
+    background-repeat: no-repeat;
+    image-rendering: -webkit-optimize-contrast; /* Sharpens image in Chrome/Edge */
+}
+
+@media (max-width: 1024px) {
+    .ucms-layout { flex-direction: column; }
+    .ucms-right-panel { display: none; }
 }
