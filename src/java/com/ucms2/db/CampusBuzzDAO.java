@@ -29,6 +29,33 @@ public class CampusBuzzDAO {
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
+    public List<CampusBuzz> getBuzzByStudent(String studentId) {
+        List<CampusBuzz> list = new ArrayList<>();
+        String sql = "SELECT * FROM CAMPUS_BUZZ WHERE StudentID = ? ORDER BY UploadDate DESC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, studentId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                CampusBuzz b = new CampusBuzz();
+                b.setPostId(rs.getInt("PostID"));
+                b.setStudentId(rs.getString("StudentID"));
+                b.setStudentName(rs.getString("StudentName"));
+                b.setContent(rs.getString("Content"));
+                b.setCategory(rs.getString("Category"));
+                b.setStatus(rs.getString("Status"));
+                b.setUploadDate(rs.getTimestamp("UploadDate"));
+                list.add(b);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
 
     public boolean updateStatus(int postId, String status) {
         String sql = "UPDATE CAMPUS_BUZZ SET Status = ?, ApprovedDate = CURRENT_TIMESTAMP WHERE PostID = ?";

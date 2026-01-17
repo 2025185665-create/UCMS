@@ -11,6 +11,10 @@
     List approved = (List) request.getAttribute("approvedBuzz");
     if (approved == null) approved = new ArrayList();
 
+    // ADD: Student's own posts
+    List myBuzz = (List) request.getAttribute("myBuzz");
+    if (myBuzz == null) myBuzz = new ArrayList();
+
     String successParam = request.getParameter("success");
 
     // Fetch Leave Count for Sidebar
@@ -185,40 +189,42 @@
                         <div class="flex justify-end"><button type="submit" class="bg-blue-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl hover:bg-blue-700 transition transform hover:scale-105">Publish Post</button></div>
                     </form>
                 </div>
-
-                <div class="flex gap-4 mb-8">
-                    <button onclick="toggleTab('all')" id="tabAll" class="tab-btn active px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">All Activity</button>
-                    <button onclick="toggleTab('mine')" id="tabMine" class="tab-btn px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest bg-white border border-slate-200 text-slate-400 transition-all">My Submissions</button>
-                </div>
             <% } %>
 
             <%-- THE FEED --%>
             <div class="space-y-8" id="buzzFeed">
-                <% for (int i = 0; i < approved.size(); i++) { 
-                    CampusBuzz buzz = (CampusBuzz) approved.get(i); 
-                    boolean isMine = student != null && student.getStudentId().equals(buzz.getStudentId());
+                <%
+                    List feedList = "admin".equals(userRole) ? approved : myBuzz;
+                    for (int i = 0; i < feedList.size(); i++) { 
+                        CampusBuzz buzz = (CampusBuzz) feedList.get(i); 
+                        boolean isMine = student != null && student.getStudentId().equals(buzz.getStudentId());
+                        if ("rejected".equals(buzz.getStatus()) && !isMine) continue;
                 %>
-                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-50 buzz-card transition-all hover:shadow-md <%= isMine ? "my-post ring-2 ring-blue-50" : "" %>">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="flex items-center gap-3">
-                                <span class="text-[11px] font-black text-blue-600 uppercase tracking-widest"><%= buzz.getCategory() %></span>
-                                <% if("claimed".equals(buzz.getStatus())) { %>
-                                    <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter">Recovered / Claimed ✅</span>
+                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-50 buzz-card transition-all hover:shadow-md <%= isMine ? "my-post ring-2 ring-blue-50" : "" %>">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-[11px] font-black text-blue-600 uppercase tracking-widest"><%= buzz.getCategory() %></span>
+                            <% if(isMine) { %>
+                                <% if("pending".equals(buzz.getStatus())) { %>
+                                    <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[9px] font-black uppercase">Pending ⏳</span>
+                                <% } else if("rejected".equals(buzz.getStatus())) { %>
+                                    <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[9px] font-black uppercase">Rejected ❌</span>
                                 <% } %>
-                            </div>
-                            <% if("Lost & Found".equals(buzz.getCategory()) && !"claimed".equals(buzz.getStatus())) { %>
-                                <form action="CampusBuzzController" method="POST">
-                                    <input type="hidden" name="action" value="claim"><input type="hidden" name="buzzId" value="<%= buzz.getPostId() %>">
-                                    <button type="submit" class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white transition">Mark Claimed</button>
-                                </form>
                             <% } %>
                         </div>
-                        <p class="text-slate-700 whitespace-pre-wrap font-medium text-lg leading-relaxed <%= "claimed".equals(buzz.getStatus()) ? "opacity-50" : "" %>"><%= buzz.getContent() %></p>
-                        <div class="mt-6 pt-6 border-t border-slate-50 flex justify-between items-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><%= isMine ? "You posted this" : buzz.getStudentName() %></span>
-                            <span class="text-[10px] font-medium text-slate-300 uppercase"><%= buzz.getUploadDate() %></span>
-                        </div>
+                        <% if("Lost & Found".equals(buzz.getCategory()) && !"claimed".equals(buzz.getStatus())) { %>
+                            <form action="CampusBuzzController" method="POST">
+                                <input type="hidden" name="action" value="claim"><input type="hidden" name="buzzId" value="<%= buzz.getPostId() %>">
+                                <button type="submit" class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white transition">Mark Claimed</button>
+                            </form>
+                        <% } %>
                     </div>
+                    <p class="text-slate-700 whitespace-pre-wrap font-medium text-lg leading-relaxed <%= "claimed".equals(buzz.getStatus()) ? "opacity-50" : "" %>"><%= buzz.getContent() %></p>
+                    <div class="mt-6 pt-6 border-t border-slate-50 flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><%= isMine ? "You posted this" : buzz.getStudentName() %></span>
+                        <span class="text-[10px] font-medium text-slate-300 uppercase"><%= buzz.getUploadDate() %></span>
+                    </div>
+                </div>
                 <% } %>
             </div>
         </main>
@@ -230,25 +236,6 @@
         var details = document.getElementById('programDetails');
         if(val === 'Program') { details.classList.remove('hidden'); } 
         else { details.classList.add('hidden'); }
-    }
-
-    function toggleTab(type) {
-        var allPosts = document.querySelectorAll('.buzz-card');
-        var tabAll = document.getElementById('tabAll');
-        var tabMine = document.getElementById('tabMine');
-
-        if(type === 'mine') {
-            tabMine.className = "tab-btn active px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all";
-            tabAll.className = "tab-btn px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest bg-white border border-slate-200 text-slate-400 transition-all";
-            allPosts.forEach(p => {
-                if(!p.classList.contains('my-post')) p.classList.add('hidden');
-                else p.classList.remove('hidden');
-            });
-        } else {
-            tabAll.className = "tab-btn active px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all";
-            tabMine.className = "tab-btn px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest bg-white border border-slate-200 text-slate-400 transition-all";
-            allPosts.forEach(p => p.classList.remove('hidden'));
-        }
     }
     </script>
 </body>
