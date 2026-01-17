@@ -96,7 +96,11 @@
 <body class="bg-[#f8fafc]">
     <div class="dashboard-container">
         <nav class="sidebar">
-            <a href="index.jsp" class="sidebar-brand">UCMS</a>
+        <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+         alt="UCMS Logo"
+         class="h-10 w-auto">
+         <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span></a>
             <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
             <a href="events.jsp" class="nav-link">📅 Events</a>
             <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>

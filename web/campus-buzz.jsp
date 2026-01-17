@@ -93,8 +93,12 @@
 
     <div class="dashboard-container">
         <nav class="sidebar">
-            <a href="index.jsp" class="sidebar-brand text-2xl font-black tracking-tighter">UCMS</a>
             <% if ("admin".equals(userRole)) { %>
+                <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+         alt="UCMS Logo"
+         class="h-10 w-auto">
+         <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span></a>
                 <a href="admin-dashboard.jsp" class="nav-link">📊 Overview</a>
                 <a href="clubs.jsp" class="nav-link">🏛️ Manage Clubs</a>
                 <a href="events.jsp" class="nav-link">📅 Event Control</a>
@@ -105,6 +109,11 @@
                     <% } %>
                 </a>
             <% } else { %>
+                <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+         alt="UCMS Logo"
+         class="h-10 w-auto">
+         <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span></a>
                 <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
                 <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
                 <a href="events.jsp" class="nav-link">📅 Events</a>

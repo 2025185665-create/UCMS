@@ -8,6 +8,10 @@
 
     String userRole = (String) session.getAttribute("userRole");
     Student student = (Student) session.getAttribute("student");
+    Integer pendingBuzzCount = (Integer) session.getAttribute("pendingBuzzCount");
+    if (pendingBuzzCount == null) {
+    pendingBuzzCount = 0;
+    }
     List clubs = (List) request.getAttribute("clubList");
     Club editClub = (Club) request.getAttribute("club");
     String action = request.getParameter("action");
@@ -65,12 +69,25 @@
 
     <div class="dashboard-container">
         <nav class="sidebar">
-            <a href="index.jsp" class="sidebar-brand text-2xl font-black tracking-tighter italic">UCMS</a>
+            <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+            <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+            alt="UCMS Logo"
+            class="h-10 w-auto">
+            <span class="text-2xl font-black tracking-tighter text-blue-400">Clubs</span></a>
             <% if ("admin".equals(userRole)) { %>
                 <a href="admin-dashboard.jsp" class="nav-link">📊 Overview</a>
                 <a href="clubs.jsp" class="nav-link active">🏛️ Manage Clubs</a>
                 <a href="events.jsp" class="nav-link">📅 Events</a>
-                <a href="campus-buzz.jsp" class="nav-link">📢 Moderation</a>
+                <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
+    <span>📢 Moderation</span>
+
+    <% if (pendingBuzzCount > 0) { %>
+        <span class="inline-flex h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-black items-center justify-center animate-bounce">
+            <%= pendingBuzzCount %>
+        </span>
+    <% } %>
+</a>
+
             <% } else { %>
                 <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
                 <a href="clubs.jsp" class="nav-link active">🔍 Explore Clubs</a>
