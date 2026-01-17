@@ -24,15 +24,21 @@ public class ClubDAO {
         return club;
     }
 
-    public boolean createClub(String name, String desc) {
-        String sql = "INSERT INTO CLUB (ClubName, ClubDescription) VALUES (?, ?)";
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, name);
-            ps.setString(2, desc);
-            return ps.executeUpdate() > 0;
-        } catch (SQLException e) { return false; }
-    }
+        public boolean createClub(String name, String desc) {
+            // Assuming ClubID is Auto-Increment/Identity in Apache Derby
+            String sql = "INSERT INTO CLUB (ClubName, ClubDescription) VALUES (?, ?)";
+            try (Connection conn = DBConnection.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, name);
+                ps.setString(2, desc);
+
+                int rowsAffected = ps.executeUpdate();
+                return rowsAffected > 0;
+            } catch (SQLException e) { 
+                e.printStackTrace(); // Check your NetBeans Output window for the specific SQL error
+                return false; 
+            }
+        }
 
     public boolean joinClub(String studentId, int clubId) {
         String sql = "INSERT INTO CLUB_MEMBERSHIP (StudentID, ClubID, Status) VALUES (?, ?, 'active')";
@@ -77,6 +83,20 @@ public class ClubDAO {
         } catch (Exception e) { return false; }
     }
 
+    public boolean updateClub(int id, String name, String desc) {
+    String sql = "UPDATE CLUB SET ClubName = ?, ClubDescription = ? WHERE ClubID = ?";
+    try (Connection conn = DBConnection.getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, name);
+        ps.setString(2, desc);
+        ps.setInt(3, id);
+        return ps.executeUpdate() > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+}
+    
     public List getAllClubs() {
         List clubs = new ArrayList();
         String sql = "SELECT * FROM CLUB";

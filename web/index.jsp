@@ -75,8 +75,10 @@
                          class="bg-[#568ca1] text-white p-4 rounded-xl w-full max-w-xs font-black hover:bg-[#457283] transition-all shadow-xl text-center uppercase tracking-widest no-underline">
                           ENTER PORTAL
                       </a>
-                      <a href="logout" class="text-red-500 font-bold mt-4 hover:underline uppercase text-xs tracking-widest no-underline">Logout Account</a>
-                  <% } %>
+                 <a href="register.jsp" class="text-[#568ca1] hover:underline">Register Now
+                         class="bg-[#568ca1] text-white p-4 rounded-xl w-full max-w-xs font-black hover:bg-[#457283] transition-all shadow-xl text-center uppercase tracking-widest no-underline">
+                 </a>
+                <% } %>
                 </div>
             </div>
         </div>

@@ -10,7 +10,6 @@ public class CampusBuzzDAO {
     public List<CampusBuzz> getBuzzByStatus(String status) {
         List<CampusBuzz> list = new ArrayList<>();
         String sql = "SELECT * FROM CAMPUS_BUZZ WHERE Status = ? ORDER BY UploadDate DESC";
-
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
@@ -29,16 +28,14 @@ public class CampusBuzzDAO {
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
+
     public List<CampusBuzz> getBuzzByStudent(String studentId) {
         List<CampusBuzz> list = new ArrayList<>();
         String sql = "SELECT * FROM CAMPUS_BUZZ WHERE StudentID = ? ORDER BY UploadDate DESC";
-
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, studentId);
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 CampusBuzz b = new CampusBuzz();
                 b.setPostId(rs.getInt("PostID"));
@@ -50,12 +47,9 @@ public class CampusBuzzDAO {
                 b.setUploadDate(rs.getTimestamp("UploadDate"));
                 list.add(b);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
-
 
     public boolean updateStatus(int postId, String status) {
         String sql = "UPDATE CAMPUS_BUZZ SET Status = ?, ApprovedDate = CURRENT_TIMESTAMP WHERE PostID = ?";
@@ -73,10 +67,15 @@ public class CampusBuzzDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, postId);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+        } catch (SQLException e) { e.printStackTrace(); return false; }
+    }
+
+    public boolean deleteClaimedPosts() {
+        String sql = "DELETE FROM CAMPUS_BUZZ WHERE Status = 'claimed'";
+        try (Connection conn = DBConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+            return stmt.executeUpdate(sql) >= 0;
+        } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 
     public boolean createPost(String studentId, String studentName, String content, String category, String venue, String eventDate) {
@@ -84,7 +83,6 @@ public class CampusBuzzDAO {
         if ("Program".equalsIgnoreCase(category)) {
             finalContent += "\n\n📍 Venue: " + venue + "\n📅 Date: " + eventDate;
         }
-
         String sql = "INSERT INTO CAMPUS_BUZZ (StudentID, StudentName, Content, Status, Category) VALUES (?, ?, ?, 'pending', ?)";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -93,9 +91,6 @@ public class CampusBuzzDAO {
             ps.setString(3, finalContent);
             ps.setString(4, category);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) { 
-            e.printStackTrace();
-            return false; 
-        }
+        } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 }

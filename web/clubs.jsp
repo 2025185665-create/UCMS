@@ -81,138 +81,167 @@
         </nav>
 
         <main class="main-content p-10">
-            <% if ("add".equals(action) && "admin".equals(userRole)) { %>
-                <%-- ADD CLUB FORM --%>
-                <div class="max-w-3xl mx-auto bg-white p-12 rounded-[2.5rem] border shadow-2xl animate-fade">
-                    <h2 class="text-3xl font-black text-slate-800 mb-8 tracking-tight italic">Establish New Society</h2>
-                    <form action="ClubController" method="POST" class="space-y-8">
-                        <input type="hidden" name="action" value="create">
-                        <div>
-                            <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Society Name</label>
-                            <input type="text" name="clubName" required class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-700 text-lg focus:ring-4 focus:ring-blue-50 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Purpose & Description</label>
-                            <textarea name="clubDescription" required class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none h-48 font-medium text-slate-600 focus:ring-4 focus:ring-blue-50 transition-all"></textarea>
-                        </div>
-                        <div class="flex gap-4 pt-4">
-                            <button type="submit" class="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition shadow-xl">Establish Society</button>
-                            <a href="clubs.jsp" class="px-12 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black flex items-center uppercase text-[10px] tracking-widest">Cancel</a>
-                        </div>
-                    </form>
-                </div>
+    
+        <%-- 1. EDIT CLUB FORM  --%>
+        <% if ("edit".equals(action) && "admin".equals(userRole) && editClub != null) { %>
+            <div class="max-w-3xl mx-auto bg-white p-12 rounded-[2.5rem] border shadow-2xl animate-fade">
+                <h2 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">Update Society Profile</h2>
+                <p class="text-slate-400 font-bold mb-8 text-xs uppercase tracking-widest">Editing: <%= editClub.getClubName() %></p>
 
-            <% } else if (clubs != null) { %>
-                <%-- CLUBS DIRECTORY VIEW --%>
-                <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-8">
+                <form action="ClubController" method="POST" class="space-y-8">
+                    <input type="hidden" name="action" value="update">
+                    <input type="hidden" name="clubId" value="<%= editClub.getClubId() %>">
+
                     <div>
-                        <h1 class="text-5xl font-black text-slate-800 tracking-tighter italic">Societies Directory</h1>
-                        <p class="text-slate-400 font-bold mt-2 text-sm uppercase tracking-widest">Official Campus Organizations</p>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Society Name</label>
+                        <input type="text" name="clubName" value="<%= editClub.getClubName() %>" required 
+                               class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-700 text-lg focus:ring-4 focus:ring-blue-50 transition-all">
                     </div>
-                    
-                    <div class="flex items-center gap-4">
-                        <%-- SEARCH FORM --%>
-                        <form action="ClubController" method="GET" class="relative group">
-                            <input type="text" name="search" value="<%= (searchTerm != null) ? searchTerm : "" %>" 
-                                   placeholder="Search societies..." 
-                                   class="bg-white border-2 border-slate-100 pl-6 pr-14 py-4 rounded-2xl text-sm outline-none w-80 shadow-sm font-bold text-slate-700 focus:border-blue-500 transition-all">
-                            <button type="submit" class="absolute right-5 top-4 text-slate-300 group-hover:text-blue-500 transition-colors text-lg">🔍</button>
-                        </form>
 
-                        <%-- FUNCTIONAL CLEAR BUTTON --%>
-                        <% if (searchTerm != null && !searchTerm.isEmpty()) { %>
-                            <a href="clubs.jsp" class="bg-red-50 text-red-500 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm">
-                                ✕ Clear
-                            </a>
-                        <% } %>
-
-                        <% if ("admin".equals(userRole)) { %>
-                            <a href="ClubController?action=add" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100 text-[11px] uppercase tracking-widest hover:bg-slate-900 transition-all">
-                                Establish New Club
-                            </a>
-                        <% } %>
+                    <div>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Purpose & Description</label>
+                        <textarea name="clubDescription" required 
+                                  class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none h-48 font-medium text-slate-600 focus:ring-4 focus:ring-blue-50 transition-all"><%= editClub.getClubDescription() %></textarea>
                     </div>
-                </header>
 
-                <div class="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50/50 border-b border-slate-100">
-                            <tr class="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                <th class="p-10">Identity</th>
-                                <th class="p-10">Manifesto</th>
-                                <th class="p-10 text-center">Engagement</th>
-                                <th class="p-10 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            <% if(clubs.isEmpty()) { %>
-                                <tr>
-                                    <td colspan="4" class="p-20 text-center text-slate-400 font-bold italic uppercase tracking-widest">No societies found matching your criteria.</td>
-                                </tr>
-                            <% } %>
-                            <% for (Object obj : clubs) { 
-                                Map c = (Map) obj; 
-                                Integer cid = (Integer) c.get("id");
-                                int count = ((Integer)c.get("count")).intValue();
-                                String mStatus = (String) membershipMap.get(cid);
-                            %>
-                            <tr class="hover:bg-slate-50/50 transition-all group">
-                                <td class="p-10 font-black text-slate-800 text-xl tracking-tight"><%= c.get("name") %></td>
-                                <td class="p-10 text-sm text-slate-500 font-medium leading-relaxed max-w-sm italic opacity-80 group-hover:opacity-100 transition-opacity">
-                                    <%= c.get("desc") %>
-                                </td>
-                                <td class="p-10 text-center">
-                                    <span class="inline-block bg-blue-50 text-blue-600 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
-                                        <%= count %> Members
-                                    </span>
-                                </td>
-                                <td class="p-10">
-                                    <div class="flex gap-4 justify-center items-center">
-                                        <% if ("admin".equals(userRole)) { %>
-                                            <a href="ClubController?action=edit&clubId=<%= cid %>" class="text-blue-600 font-black text-[11px] uppercase tracking-widest hover:underline">Update</a>
-                                            <% if (count > 0) { %>
-                                                <span title="Society has active members" class="text-slate-200 font-black text-[11px] uppercase tracking-widest cursor-not-allowed">Delete 🔒</span>
-                                            <% } else { %>
-                                                <form action="ClubController" method="POST" onsubmit="return confirm('Permanently dissolve this society?')">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="clubId" value="<%= cid %>">
-                                                    <button type="submit" class="text-red-400 font-black text-[11px] uppercase tracking-widest hover:text-red-600">Dissolve</button>
-                                                </form>
-                                            <% } %>
-                                        <% } else { %>
-                                            <%-- STUDENT ACTION BUTTONS --%>
-                                            <% if ("active".equals(mStatus)) { %>
-                                                <form action="ClubController" method="POST">
-                                                    <input type="hidden" name="action" value="leave">
-                                                    <input type="hidden" name="clubId" value="<%= cid %>">
-                                                    <button type="submit" class="text-red-500 font-black border-2 border-red-100 px-8 py-3 rounded-2xl text-[10px] uppercase hover:bg-red-500 hover:text-white transition-all">Leave Society</button>
-                                                </form>
-                                            <% } else if ("leave_pending".equals(mStatus)) { %>
-                                                <span class="text-amber-500 font-black text-[10px] uppercase border-2 border-amber-50 px-8 py-3 rounded-2xl bg-amber-50/30">Exit Pending...</span>
-                                            <% } else { %>
-                                                <form action="ClubController" method="POST">
-                                                    <input type="hidden" name="action" value="join">
-                                                    <input type="hidden" name="clubId" value="<%= cid %>">
-                                                    <button type="submit" class="bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-black text-[10px] shadow-lg hover:bg-blue-600 transition-all uppercase tracking-widest">Join Society</button>
-                                                </form>
-                                            <% } %>
-                                        <% } %>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
+                    <div class="flex gap-4 pt-4">
+                        <button type="submit" class="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition shadow-xl">Save Changes</button>
+                        <a href="ClubController" class="px-12 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black flex items-center uppercase text-[10px] tracking-widest">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+        <%-- 2. ADD CLUB FORM --%>
+        <% } else if ("add".equals(action) && "admin".equals(userRole)) { %>
+            <div class="max-w-3xl mx-auto bg-white p-12 rounded-[2.5rem] border shadow-2xl animate-fade">
+                <h2 class="text-3xl font-black text-slate-800 mb-8 tracking-tight italic">Establish New Society</h2>
+                <form action="ClubController" method="POST" class="space-y-8">
+                    <input type="hidden" name="action" value="create">
+                    <div>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Society Name</label>
+                        <input type="text" name="clubName" required class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold text-slate-700 text-lg focus:ring-4 focus:ring-blue-50 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-1">Purpose & Description</label>
+                        <textarea name="clubDescription" required class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl outline-none h-48 font-medium text-slate-600 focus:ring-4 focus:ring-blue-50 transition-all"></textarea>
+                    </div>
+                    <div class="flex gap-4 pt-4">
+                        <button type="submit" class="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition shadow-xl">Establish Society</button>
+                        <a href="ClubController" class="px-12 bg-slate-100 text-slate-500 py-5 rounded-2xl font-black flex items-center uppercase text-[10px] tracking-widest">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+        <%-- 3. DIRECTORY VIEW --%>
+        <% } else if (clubs != null) { %>
+            <%-- CLUBS DIRECTORY VIEW --%>
+            <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-8">
+                <div>
+                    <h1 class="text-5xl font-black text-slate-800 tracking-tighter italic">Societies Directory</h1>
+                    <p class="text-slate-400 font-bold mt-2 text-sm uppercase tracking-widest">Official Campus Organizations</p>
                 </div>
-            <% } %>
+                
+                <div class="flex items-center gap-4">
+                    <%-- SEARCH FORM --%>
+                    <form action="ClubController" method="GET" class="relative group">
+                        <input type="text" name="search" value="<%= (searchTerm != null) ? searchTerm : "" %>" 
+                               placeholder="Search societies..." 
+                               class="bg-white border-2 border-slate-100 pl-6 pr-14 py-4 rounded-2xl text-sm outline-none w-80 shadow-sm font-bold text-slate-700 focus:border-blue-500 transition-all">
+                        <button type="submit" class="absolute right-5 top-4 text-slate-300 group-hover:text-blue-500 transition-colors text-lg">🔍</button>
+                    </form>
+
+                    <%-- FUNCTIONAL CLEAR BUTTON --%>
+                    <% if (searchTerm != null && !searchTerm.isEmpty()) { %>
+                        <a href="clubs.jsp" class="bg-red-50 text-red-500 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                            ✕ Clear
+                        </a>
+                    <% } %>
+
+                    <% if ("admin".equals(userRole)) { %>
+                        <a href="ClubController?action=add" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100 text-[11px] uppercase tracking-widest hover:bg-slate-900 transition-all">
+                            Establish New Club
+                        </a>
+                    <% } %>
+                </div>
+            </header>
+
+            <div class="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50/50 border-b border-slate-100">
+                        <tr class="text-[12px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                            <th class="p-10">Identity</th>
+                            <th class="p-10">Manifesto</th>
+                            <th class="p-10 text-center">Engagement</th>
+                            <th class="p-10 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <% if(clubs.isEmpty()) { %>
+                            <tr>
+                                <td colspan="4" class="p-20 text-center text-slate-400 font-bold italic uppercase tracking-widest">No societies found matching your criteria.</td>
+                            </tr>
+                        <% } %>
+                        <% for (Object obj : clubs) { 
+                            Map c = (Map) obj; 
+                            Integer cid = (Integer) c.get("id");
+                            int count = ((Integer)c.get("count")).intValue();
+                            String mStatus = (String) membershipMap.get(cid);
+                        %>
+                        <tr class="hover:bg-slate-50/50 transition-all group">
+                            <td class="p-10 font-black text-slate-800 text-xl tracking-tight"><%= c.get("name") %></td>
+                            <td class="p-10 text-sm text-slate-500 font-medium leading-relaxed max-w-sm italic opacity-80 group-hover:opacity-100 transition-opacity">
+                                <%= c.get("desc") %>
+                            </td>
+                            <td class="p-10 text-center">
+                                <span class="inline-block bg-blue-50 text-blue-600 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest">
+                                    <%= count %> Members
+                                </span>
+                            </td>
+                            <td class="p-10">
+                                <div class="flex gap-4 justify-center items-center">
+                                    <% if ("admin".equals(userRole)) { %>
+                                        <a href="ClubController?action=edit&clubId=<%= cid %>" class="text-blue-600 font-black text-[11px] uppercase tracking-widest hover:underline">Update</a>
+                                        <% if (count > 0) { %>
+                                            <span title="Society has active members" class="text-slate-200 font-black text-[11px] uppercase tracking-widest cursor-not-allowed">Delete 🔒</span>
+                                        <% } else { %>
+                                            <form action="ClubController" method="POST" onsubmit="return confirm('Permanently dissolve this society?')">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="clubId" value="<%= cid %>">
+                                                <button type="submit" class="text-red-400 font-black text-[11px] uppercase tracking-widest hover:text-red-600">Dissolve</button>
+                                            </form>
+                                        <% } %>
+                                    <% } else { %>
+                                        <%-- STUDENT ACTION BUTTONS --%>
+                                        <% if ("active".equals(mStatus)) { %>
+                                            <form action="ClubController" method="POST">
+                                                <input type="hidden" name="action" value="leave">
+                                                <input type="hidden" name="clubId" value="<%= cid %>">
+                                                <button type="submit" class="text-red-500 font-black border-2 border-red-100 px-8 py-3 rounded-2xl text-[10px] uppercase hover:bg-red-500 hover:text-white transition-all">Leave Society</button>
+                                            </form>
+                                        <% } else if ("leave_pending".equals(mStatus)) { %>
+                                            <span class="text-amber-500 font-black text-[10px] uppercase border-2 border-amber-50 px-8 py-3 rounded-2xl bg-amber-50/30">Exit Pending...</span>
+                                        <% } else { %>
+                                            <form action="ClubController" method="POST">
+                                                <input type="hidden" name="action" value="join">
+                                                <input type="hidden" name="clubId" value="<%= cid %>">
+                                                <button type="submit" class="bg-slate-900 text-white px-10 py-3.5 rounded-2xl font-black text-[10px] shadow-lg hover:bg-blue-600 transition-all uppercase tracking-widest">Join Society</button>
+                                            </form>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                            </td>
+                        </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
         </main>
     </div>
-        <!-- Footer -->
-<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+        <footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
     <div class="max-w-7xl mx-auto px-4">
         <p>
-            &copy; <%= java.time.Year.now() %> University Club Management System. 
-            All rights reserved.
+            &copy; <%= java.time.Year.now() %> University Club Management System. All rights reserved.
         </p>
         <p class="mt-1">Made with ❤️ for university students</p>
     </div>

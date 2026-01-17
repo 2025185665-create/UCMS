@@ -20,75 +20,34 @@ public class EventController extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        
+
         HttpSession session = request.getSession();
         String userRole = (String) session.getAttribute("userRole");
+        Student student = (Student) session.getAttribute("student");
         String action = request.getParameter("action");
         String search = request.getParameter("search");
         String viewMode = request.getParameter("viewMode");
 
+        // --- Logic for Participants List ---
         if ("viewAttendance".equals(action) && "admin".equals(userRole)) {
             try {
                 int eventId = Integer.parseInt(request.getParameter("eventId"));
                 request.setAttribute("attendanceList", eventDAO.getAttendance(eventId));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
         } 
-        
-        if (!"add".equals(action)) {
-            request.setAttribute("eventList", getEventsWithSearch(search));
-            request.setAttribute("isSearchActive", (search != null && !search.trim().isEmpty()));
+
+        List events;
+        if (search != null && !search.trim().isEmpty()) {
+            events = eventDAO.getEventsWithSearch(search);
+            request.setAttribute("isSearchActive", Boolean.TRUE);
+        } else {
+            events = eventDAO.getAllEvents();
+            request.setAttribute("isSearchActive", Boolean.FALSE);
         }
-        
-        // Default to grid if no viewMode is specified
+
+        request.setAttribute("eventList", events);
         request.setAttribute("viewMode", (viewMode != null) ? viewMode : "grid");
         request.getRequestDispatcher("events.jsp").forward(request, response);
-    }
-
-    private List getEventsWithSearch(String search) {
-        List list = new ArrayList();
-        Connection conn = null;
-        try {
-            conn = DBConnection.getConnection();
-            String sql = "SELECT * FROM EVENT";
-            if (search != null && !search.trim().isEmpty()) {
-                sql += " WHERE UPPER(EventName) LIKE ? OR UPPER(EventVenue) LIKE ?";
-            }
-            sql += " ORDER BY EventDate ASC"; // ASC is better for Calendar flow
-
-            PreparedStatement ps = conn.prepareStatement(sql);
-            if (search != null && !search.trim().isEmpty()) {
-                String pattern = "%" + search.toUpperCase() + "%";
-                ps.setString(1, pattern);
-                ps.setString(2, pattern);
-            }
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Event e = new Event();
-                e.setEventId(rs.getInt("EventID"));
-                e.setEventName(rs.getString("EventName"));
-                e.setEventVenue(rs.getString("EventVenue"));
-                e.setEventDate(rs.getDate("EventDate"));
-                e.setTargetGoal(rs.getInt("TargetGoal"));
-                e.setAttendanceCount(getRegCount(rs.getInt("EventID")));
-                list.add(e);
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        finally { if(conn != null) try { conn.close(); } catch(Exception e) {} }
-        return list;
-    }
-
-    private int getRegCount(int eventId) {
-        int count = 0;
-        try (Connection conn = DBConnection.getConnection()) {
-            PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM EVENT_REGISTRATION WHERE EventID = ?");
-            ps.setInt(1, eventId);
-            ResultSet rs = ps.executeQuery();
-            if(rs.next()) count = rs.getInt(1);
-        } catch (Exception e) {}
-        return count;
     }
 
     @Override
@@ -106,58 +65,87 @@ public class EventController extends HttpServlet {
                 return; 
             }
 
-            if ("create".equals(action) && "admin".equals(userRole)) {
-                int targetGoal = Integer.parseInt(request.getParameter("targetGoal"));
-                boolean success = eventDAO.createEvent(
-                    request.getParameter("eventName"), 
-                    request.getParameter("eventVenue"), 
-                    request.getParameter("eventDate"),
-                    targetGoal
-                );
-                if(!success) msg = "Failed to create event";
-            } 
-            else if ("delete".equals(action) && "admin".equals(userRole)) {
-                int eventId = Integer.parseInt(request.getParameter("eventId"));
-                if (getRegCount(eventId) > 0) {
-                    msg = "Error: Cannot delete event with registrations.";
-                } else {
-                    deleteEventWithRegistrations(eventId);
-                    msg = "Event successfully deleted.";
+            // --- ADMIN ACTIONS BLOCK ---
+            if ("admin".equals(userRole)) {
+                if ("create".equals(action)) {
+                    String name = request.getParameter("eventName");
+                    String date = request.getParameter("eventDate");
+                    String venue = request.getParameter("eventVenue");
+                    String goal = request.getParameter("targetGoal"); 
+
+                    int goalInt = (goal != null && !goal.trim().isEmpty()) ? Integer.parseInt(goal.trim()) : 50;
+                    String combinedVenue = venue + " | " + goalInt;
+
+                    // Pass the real number to TargetGoal column and combined string to Venue column
+                    eventDAO.createEvent(name, combinedVenue, date, goalInt); 
+                    msg = "Event Created Successfully!";
+                } 
+                else if ("delete".equals(action)) {
+                    // FIXED: This logic is now properly nested inside the Admin check
+                    int eventId = Integer.parseInt(request.getParameter("eventId"));
+                    deleteEventWithRegistrations(eventId); 
+                    msg = "Event and all associated registrations deleted.";
                 }
-            }
+            } 
+            // --- STUDENT ACTIONS BLOCK ---
             else {
                 Student s = (Student) session.getAttribute("student");
                 String eIdParam = request.getParameter("eventId");
                 if (s != null && eIdParam != null) {
                     int eventId = Integer.parseInt(eIdParam);
-                    if ("register".equals(action)) {
-                        Event e = eventDAO.getEventById(eventId);
-                        if (e != null && getRegCount(eventId) >= e.getTargetGoal()) {
-                            msg = "Error: Event is already full!";
-                        } else {
-                            eventDAO.registerStudent(eventId, s.getStudentId(), s.getStudentName());
-                        }
-                    } else if ("unregister".equals(action) || "withdraw".equals(action)) {
+                    
+if ("register".equals(action)) {
+    Event e = eventDAO.getEventById(eventId); 
+    
+    // Check capacity first
+    if (e != null && e.getAttendanceCount() >= e.getTargetGoal()) {
+        msg = "Error: This event is already full!";
+    } else {
+        boolean success = eventDAO.registerStudent(eventId, s.getStudentId(), s.getStudentName());
+        if(success) {
+            msg = "Registration Successful!";
+        } else {
+            // This triggers if the INSERT fails (e.g., student already registered)
+            msg = "Error: Registration failed. You might already be registered.";
+        }
+    }
+} else if ("unregister".equals(action) || "withdraw".equals(action)) {
                         eventDAO.unregisterStudent(eventId, s.getStudentId());
                         msg = "Withdrawn from event";
                     }
+
+                    // --- REFRESH SESSION DATA ---
+                    List updatedEvents = eventDAO.getEventsByStudent(s.getStudentId());
+                    session.setAttribute("myEvents", updatedEvents);
+                    session.setAttribute("eventCount", new Integer(updatedEvents.size()));
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             msg = "Error: " + e.getMessage();
         }
-        response.sendRedirect("EventController?success=" + java.net.URLEncoder.encode(msg, "UTF-8"));
-    }
+        
+response.sendRedirect("EventController?success=" + URLEncoder.encode(msg, "UTF-8"));    }
 
     private void deleteEventWithRegistrations(int eventId) throws SQLException {
-        try (Connection conn = DBConnection.getConnection()) {
-            PreparedStatement ps1 = conn.prepareStatement("DELETE FROM EVENT_REGISTRATION WHERE EventID = ?");
+        Connection conn = null;
+        PreparedStatement ps1 = null;
+        PreparedStatement ps2 = null;
+        try {
+            conn = DBConnection.getConnection();
+            // Step 1: Delete Registrations first (Child records)
+            ps1 = conn.prepareStatement("DELETE FROM EVENT_REGISTRATION WHERE EventID = ?");
             ps1.setInt(1, eventId);
             ps1.executeUpdate();
-            PreparedStatement ps2 = conn.prepareStatement("DELETE FROM EVENT WHERE EventID = ?");
+
+            // Step 2: Delete Event (Parent record)
+            ps2 = conn.prepareStatement("DELETE FROM EVENT WHERE EventID = ?");
             ps2.setInt(1, eventId);
             ps2.executeUpdate();
+        } finally {
+            if(ps1 != null) ps1.close();
+            if(ps2 != null) ps2.close();
+            if(conn != null) conn.close();
         }
     }
 
@@ -166,6 +154,7 @@ public class EventController extends HttpServlet {
         String eventName = request.getParameter("eventName");
         String eventDate = request.getParameter("eventDate");
         if (student == null) return;
+        
         response.setContentType("text/plain");
         response.setHeader("Content-Disposition", "attachment;filename=Certificate.txt");
         PrintWriter out = response.getWriter();

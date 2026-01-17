@@ -13,11 +13,14 @@ import javax.servlet.http.*;
 @WebServlet("/AdminDashboardController")
 public class AdminDashboardServlet extends HttpServlet {
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("admin") == null) {
+        
+        // 1. Security Check
+        if (session == null || !"admin".equals(session.getAttribute("userRole"))) {
             response.sendRedirect("login.jsp");
             return;
         }
@@ -32,12 +35,15 @@ public class AdminDashboardServlet extends HttpServlet {
             conn = DBConnection.getConnection();
             stmt = conn.createStatement();
             
-            // 1. Stats
-            int totalClubs = clubDAO.getAllClubs().size();
-            int totalEvents = eventDAO.getAllEvents().size();
+            // 2. Stats from DAOs (Explicitly casting to List to avoid compile errors)
+            List clubsList = (List) clubDAO.getAllClubs();
+            int totalClubs = (clubsList != null) ? clubsList.size() : 0;
             
-            // 2. Pending Exits
-            List leaveRequests = new ArrayList();
+            List eventsList = (List) eventDAO.getAllEvents();
+            int totalEvents = (eventsList != null) ? eventsList.size() : 0;
+            
+            // 3. Pending Leave Requests
+            List<Map<String, Object>> leaveRequests = new ArrayList<>();
             String leaveSql = "SELECT s.StudentName, c.ClubName, m.StudentID, m.ClubID " +
                               "FROM CLUB_MEMBERSHIP m " +
                               "JOIN STUDENT s ON m.StudentID = s.StudentID " +
@@ -45,7 +51,7 @@ public class AdminDashboardServlet extends HttpServlet {
                               "WHERE m.Status = 'leave_pending'";
             rs = stmt.executeQuery(leaveSql);
             while(rs.next()) {
-                Map req = new HashMap();
+                Map<String, Object> req = new HashMap<>();
                 req.put("studentName", rs.getString("StudentName"));
                 req.put("clubName", rs.getString("ClubName"));
                 req.put("studentId", rs.getString("StudentID"));
@@ -54,27 +60,28 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             rs.close(); 
 
-            // 3. Buzz Count
+            // 4. Pending Buzz Count
             rs = stmt.executeQuery("SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE Status = 'pending'");
             int pendingBuzzCount = 0;
             if(rs.next()) pendingBuzzCount = rs.getInt(1);
             rs.close();
 
-            // 4. Contributors
-            List topContributors = new ArrayList();
+            // 5. Contributors (Informants) - High level SQL logic
+            List<Map<String, Object>> topContributors = new ArrayList<>();
             String informantSql = "SELECT StudentName, COUNT(*) as cnt FROM CAMPUS_BUZZ " +
                                  "WHERE Status = 'approved' " +
                                  "GROUP BY StudentName ORDER BY cnt DESC";
             rs = stmt.executeQuery(informantSql);
-            int count = 0;
-            while(rs.next() && count < 5) {
-                Map contributor = new HashMap();
+            int contribCount = 0;
+            while(rs.next() && contribCount < 5) {
+                Map<String, Object> contributor = new HashMap<>();
                 contributor.put("name", rs.getString("StudentName"));
-                contributor.put("count", rs.getString("cnt"));
+                contributor.put("count", rs.getInt("cnt")); // Get as Int directly
                 topContributors.add(contributor);
-                count++;
+                contribCount++;
             }
 
+            // 6. Synchronize Session Attributes
             session.setAttribute("totalClubs", totalClubs);
             session.setAttribute("totalEvents", totalEvents);
             session.setAttribute("leaveRequests", leaveRequests);
@@ -82,12 +89,14 @@ public class AdminDashboardServlet extends HttpServlet {
             session.setAttribute("pendingBuzzCount", pendingBuzzCount);
             session.setAttribute("topContributors", topContributors);
 
-            response.sendRedirect("admin-dashboard.jsp");
+            // 7. Use FORWARD to render the dashboard with the new data
+            request.getRequestDispatcher("admin-dashboard.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect("login.jsp?error=Dashboard Error");
+            response.sendRedirect("login.jsp?error=DashboardLoadError");
         } finally {
+            // Safe cleanup of resources
             if (rs != null) try { rs.close(); } catch (SQLException e) {}
             if (stmt != null) try { stmt.close(); } catch (SQLException e) {}
             if (conn != null) try { conn.close(); } catch (SQLException e) {}

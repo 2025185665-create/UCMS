@@ -19,11 +19,19 @@ public class MemberController extends HttpServlet {
             throws ServletException, IOException {
         
         HttpSession session = request.getSession();
-        Admin admin = (Admin) session.getAttribute("admin");
+        String userRole = (String) session.getAttribute("userRole");
         String action = request.getParameter("action");
+        String studentId = request.getParameter("studentId"); // For Transcript
 
-        if (admin == null) {
+        // Security check using your userRole session logic
+        if (!"admin".equals(userRole)) {
             response.sendRedirect("login.jsp");
+            return;
+        }
+
+        // NEW: If a studentId is provided, forward to transcript view in JSP
+        if (studentId != null && !studentId.isEmpty()) {
+            request.getRequestDispatcher("members.jsp").forward(request, response);
             return;
         }
 
@@ -87,7 +95,7 @@ public class MemberController extends HttpServlet {
         HttpSession session = request.getSession();
         List<Map<String, String>> members = new ArrayList<Map<String, String>>();
         
-        String sql = "SELECT m.StudentID, s.StudentName, c.ClubName, m.JoinDate " +
+        String sql = "SELECT m.StudentID, s.StudentName, s.StudentEmail, c.ClubName, m.JoinDate " +
                      "FROM CLUB_MEMBERSHIP m " +
                      "JOIN STUDENT s ON m.StudentID = s.StudentID " +
                      "JOIN CLUB c ON m.ClubID = c.ClubID " +
@@ -102,6 +110,7 @@ public class MemberController extends HttpServlet {
                 Map<String, String> member = new HashMap<String, String>();
                 member.put("id", rs.getString("StudentID"));
                 member.put("name", rs.getString("StudentName"));
+                member.put("email", rs.getString("StudentEmail"));
                 member.put("club", rs.getString("ClubName"));
                 member.put("date", rs.getString("JoinDate"));
                 members.add(member);

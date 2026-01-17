@@ -39,6 +39,7 @@ public class ClubServlet extends HttpServlet {
         if ("edit".equals(action)) {
             int id = Integer.parseInt(request.getParameter("clubId"));
             request.setAttribute("club", clubDAO.getClubById(id));
+            // Important: Forward to clubs.jsp and keep the action=edit parameter for the JSP logic
             request.getRequestDispatcher("clubs.jsp?action=edit").forward(request, response);
             return;
         }
@@ -105,11 +106,36 @@ public class ClubServlet extends HttpServlet {
                 clubDAO.joinClub(s.getStudentId(), Integer.parseInt(request.getParameter("clubId")));
                 msg = "Welcome to the club!";
             }
+            else if ("update".equals(action) && "admin".equals(userRole)) {
+            int id = Integer.parseInt(request.getParameter("clubId"));
+            String name = request.getParameter("clubName");
+            String desc = request.getParameter("clubDescription");
+
+            if(clubDAO.updateClub(id, name, desc)) {
+                msg = "Society profile updated successfully";
+            } else {
+                msg = "Error: Failed to update society";
+            }
+        }
             else if ("leave".equals(action)) {
                 Student s = (Student) session.getAttribute("student");
                 clubDAO.requestToLeave(s.getStudentId(), Integer.parseInt(request.getParameter("clubId")));
                 msg = "Leave request sent to Admin for approval.";
             }
+            else if ("create".equals(action) && "admin".equals(userRole)) {
+            String name = request.getParameter("clubName");
+            String desc = request.getParameter("clubDescription");
+
+            // Safety check: ensure values aren't null
+            if (name != null && desc != null) {
+                boolean success = clubDAO.createClub(name, desc);
+                if (success) {
+                    msg = "Society established successfully!";
+                } else {
+                    msg = "Error: Could not create society. Name might be too long.";
+                }
+            }
+        }
             else if ("approveLeave".equals(action) && "admin".equals(userRole)) {
                 String sid = request.getParameter("studentId");
                 int cid = Integer.parseInt(request.getParameter("clubId"));
