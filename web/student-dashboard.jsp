@@ -37,14 +37,36 @@
     <title>Dashboard | UCMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/styles.css">
-    <style>
-        .ticker-wrap { width: 100%; overflow: hidden; }
-        .ticker-move { display: inline-block; white-space: nowrap; padding-right: 100%; animation: ticker 50s linear infinite; }
-        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
-        .nav-link.active { background: rgba(59, 130, 246, 0.15); border-right: 4px solid #3b82f6; color: #fff !important; }
-        .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .interactive-card:hover { transform: translateY(-8px); border-color: #3b82f6; }
-    </style>
+    you try masukkan yang ni
+
+<style>
+    .ticker-wrap { 
+        width: 100%; 
+        overflow: hidden; 
+        cursor: pointer; /* Optional: indicates interactivity */
+    }
+    
+    .ticker-move { 
+        display: inline-block; 
+        white-space: nowrap; 
+        padding-right: 100%; 
+        animation: ticker 50s linear infinite; 
+    }
+
+    /* This is the magic line that stops the ticker on hover */
+    .ticker-wrap:hover .ticker-move {
+        animation-play-state: paused;
+    }
+
+    @keyframes ticker { 
+        0% { transform: translate3d(0, 0, 0); } 
+        100% { transform: translate3d(-100%, 0, 0); } 
+    }
+
+    .nav-link.active { background: rgba(59, 130, 246, 0.15); border-right: 4px solid #3b82f6; color: #fff !important; }
+    .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .interactive-card:hover { transform: translateY(-8px); border-color: #3b82f6; }
+</style>
 </head>
 <body class="bg-[#f8fafc]">
     <div class="dashboard-container">
