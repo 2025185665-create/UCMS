@@ -16,11 +16,9 @@ public class ReportServlet extends HttpServlet {
         
         HttpSession session = request.getSession();
         String userRole = (String) session.getAttribute("userRole");
-        
-        // Parameters for Admin multi-report and filtering logic
         String targetStudentId = request.getParameter("studentId");
         String reportType = request.getParameter("type");
-        String clubFilter = request.getParameter("clubId"); // Captured from the dropdown filter
+        String clubFilter = request.getParameter("clubId"); 
         
         List reportData = new ArrayList();
         Connection conn = null;
@@ -28,15 +26,14 @@ public class ReportServlet extends HttpServlet {
         try {
             conn = DBConnection.getConnection();
             
-            // LOGIC A: ADMIN GLOBAL EXPORT (With Club Separator Filter)
+            // LOGIC A: ADMIN GLOBAL EXPORT (Added Status)
             if ("admin".equals(userRole) && "all_members".equals(reportType)) {
                 StringBuilder sql = new StringBuilder(
-                    "SELECT m.StudentID, s.StudentName, c.ClubName FROM CLUB_MEMBERSHIP m " +
+                    "SELECT m.StudentID, s.StudentName, c.ClubName, m.Status FROM CLUB_MEMBERSHIP m " +
                     "JOIN STUDENT s ON m.StudentID = s.StudentID " +
                     "JOIN CLUB c ON m.ClubID = c.ClubID "
                 );
 
-                // Apply filter if a specific club was chosen in the dropdown
                 if (clubFilter != null && !clubFilter.trim().isEmpty()) {
                     sql.append(" WHERE m.ClubID = ? ");
                 }
@@ -44,81 +41,60 @@ public class ReportServlet extends HttpServlet {
 
                 PreparedStatement stmt = conn.prepareStatement(sql.toString());
                 if (clubFilter != null && !clubFilter.trim().isEmpty()) {
-                    stmt.setString(1, clubFilter);
+                    stmt.setInt(1, Integer.parseInt(clubFilter));
                 }
 
                 ResultSet rs = stmt.executeQuery();
-                String filterName = "All Societies";
-
                 while(rs.next()) {
                     Map row = new HashMap();
                     row.put("id", rs.getString("StudentID"));
                     row.put("name", rs.getString("StudentName"));
                     row.put("club", rs.getString("ClubName"));
+                    row.put("status", rs.getString("Status")); // Status added for badges
                     reportData.add(row);
-                    filterName = rs.getString("ClubName"); // Get club name for the header
                 }
-
-                request.setAttribute("isGlobalReport", true);
-                if (clubFilter != null && !clubFilter.trim().isEmpty() && !reportData.isEmpty()) {
-                    request.setAttribute("filterTitle", filterName);
-                } else {
-                    request.setAttribute("filterTitle", "General Membership Directory");
-                }
+                request.setAttribute("isGlobalReport", Boolean.TRUE);
             } 
-            // LOGIC B: INDIVIDUAL TRANSCRIPT (Unchanged logic for individual view)
+            // LOGIC B: INDIVIDUAL TRANSCRIPT
             else {
-                String studentIdToFetch = null;
-                String studentNameToDisplay = "";
-
-                if ("admin".equals(userRole) && targetStudentId != null) {
-                    studentIdToFetch = targetStudentId;
-                    PreparedStatement psN = conn.prepareStatement("SELECT StudentName FROM STUDENT WHERE StudentID = ?");
-                    psN.setString(1, studentIdToFetch);
-                    ResultSet rsN = psN.executeQuery();
-                    if(rsN.next()) studentNameToDisplay = rsN.getString("StudentName");
-                } else {
-                    Student s = (Student) session.getAttribute("student");
-                    if (s != null) {
-                        studentIdToFetch = s.getStudentId();
-                        studentNameToDisplay = s.getStudentName();
-                    }
+                String studentIdToFetch = (targetStudentId != null) ? targetStudentId : ((Student)session.getAttribute("student")).getStudentId();
+                
+                // Fetch Clubs with status for individual view
+                PreparedStatement ps1 = conn.prepareStatement("SELECT c.ClubName, m.Status FROM CLUB c JOIN CLUB_MEMBERSHIP m ON c.ClubID = m.ClubID WHERE m.StudentID = ?");
+                ps1.setString(1, studentIdToFetch);
+                ResultSet rs1 = ps1.executeQuery();
+                List clubs = new ArrayList();
+                while(rs1.next()) { 
+                    Map cMap = new HashMap();
+                    cMap.put("name", rs1.getString("ClubName"));
+                    cMap.put("status", rs1.getString("Status"));
+                    clubs.add(cMap); 
                 }
+                request.setAttribute("studentClubs", clubs);
 
-                if (studentIdToFetch != null) {
-                    // Fetch Clubs for individual
-                    PreparedStatement ps1 = conn.prepareStatement("SELECT c.ClubName FROM CLUB c JOIN CLUB_MEMBERSHIP m ON c.ClubID = m.ClubID WHERE m.StudentID = ?");
-                    ps1.setString(1, studentIdToFetch);
-                    ResultSet rs1 = ps1.executeQuery();
-                    List clubs = new ArrayList();
-                    while(rs1.next()) { clubs.add(rs1.getString("ClubName")); }
-                    request.setAttribute("studentClubs", clubs);
-
-                    // Fetch Events for individual
-                    PreparedStatement ps2 = conn.prepareStatement("SELECT e.EventName, e.EventDate, e.EventVenue FROM EVENT e JOIN EVENT_REGISTRATION r ON e.EventID = r.EventID WHERE r.StudentID = ? ORDER BY e.EventDate DESC");
-                    ps2.setString(1, studentIdToFetch);
-                    ResultSet rs2 = ps2.executeQuery();
-                    while(rs2.next()) {
-                        Map row = new HashMap();
-                        row.put("eventName", rs2.getString("EventName"));
-                        row.put("eventDate", rs2.getDate("EventDate"));
-                        row.put("eventVenue", rs2.getString("EventVenue"));
-                        reportData.add(row);
-                    }
-                    request.setAttribute("reportStudentName", studentNameToDisplay);
-                    request.setAttribute("reportStudentId", studentIdToFetch);
-                    request.setAttribute("isGlobalReport", false);
+                // Fetch Events
+                PreparedStatement ps2 = conn.prepareStatement("SELECT e.EventName, e.EventDate, e.EventVenue FROM EVENT e JOIN EVENT_REGISTRATION r ON e.EventID = r.EventID WHERE r.StudentID = ? ORDER BY e.EventDate DESC");
+                ps2.setString(1, studentIdToFetch);
+                ResultSet rs2 = ps2.executeQuery();
+                while(rs2.next()) {
+                    Map row = new HashMap();
+                    row.put("eventName", rs2.getString("EventName"));
+                    row.put("eventDate", rs2.getDate("EventDate"));
+                    row.put("eventVenue", rs2.getString("EventVenue"));
+                    reportData.add(row);
                 }
+                request.setAttribute("reportStudentId", studentIdToFetch);
+                request.setAttribute("isGlobalReport", Boolean.FALSE);
             }
             
             request.setAttribute("reportData", reportData);
-            request.setAttribute("generatedDate", new java.text.SimpleDateFormat("dd MMM yyyy, HH:mm").format(new java.util.Date()));
+            request.setAttribute("generatedDate", new java.text.SimpleDateFormat("dd MMM yyyy").format(new java.util.Date()));
             request.getRequestDispatcher("report-view.jsp").forward(request, response);
 
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            try { if (conn != null) conn.close(); } catch (SQLException ex) { }
+            if (conn != null) try { conn.close(); } catch (SQLException ex) { }
         }
     }
 }

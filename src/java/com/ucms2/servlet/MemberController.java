@@ -1,6 +1,9 @@
 package com.ucms2.servlet;
 
 import com.ucms2.db.DBConnection;
+import com.ucms2.db.StudentDAO;
+import com.ucms2.model.Admin;
+import com.ucms2.model.Student;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
@@ -11,17 +14,84 @@ import javax.servlet.http.*;
 @WebServlet("/MemberController")
 public class MemberController extends HttpServlet {
 
-    // GET: Fetches the list of all members across all clubs
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        HttpSession session = request.getSession();
+        Admin admin = (Admin) session.getAttribute("admin");
+        String action = request.getParameter("action");
+
+        if (admin == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        if ("viewAll".equals(action)) {
+            StudentDAO dao = new StudentDAO();
+            List<Student> students = dao.getAllStudents();
+            request.setAttribute("studentList", students);
+            request.getRequestDispatcher("view-students.jsp").forward(request, response);
+        } else {
+            fetchClubMemberships(request, response);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        String action = request.getParameter("action");
+
+        if ("register".equals(action)) {
+            handleStudentRegistration(request, response);
+        } else if ("revoke".equals(action)) {
+            handleRevokeMembership(request, response);
+        } else if ("approveLeave".equals(action)) {
+            processLeaveRequest(request, response, true);
+        } else if ("rejectLeave".equals(action)) {
+            processLeaveRequest(request, response, false);
+        }
+    }
+
+    private void processLeaveRequest(HttpServletRequest request, HttpServletResponse response, boolean approve) 
+            throws IOException {
+        String studentId = request.getParameter("studentId");
+        String clubIdRaw = request.getParameter("clubId");
+        
+        if (studentId == null || clubIdRaw == null) {
+            response.sendRedirect("AdminDashboardController?error=Missing Data");
+            return;
+        }
+
+        try (Connection conn = DBConnection.getConnection()) {
+            int clubId = Integer.parseInt(clubIdRaw);
+            
+            String sql = approve ? "DELETE FROM CLUB_MEMBERSHIP WHERE StudentID = ? AND ClubID = ?" 
+                                 : "UPDATE CLUB_MEMBERSHIP SET Status = 'active' WHERE StudentID = ? AND ClubID = ?";
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, studentId);
+            ps.setInt(2, clubId);
+            ps.executeUpdate();
+            response.sendRedirect("AdminDashboardController?success=Request Processed");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect("AdminDashboardController?error=Action Failed");
+        }
+    }
+
+    private void fetchClubMemberships(HttpServletRequest request, HttpServletResponse response) 
+            throws ServletException, IOException {
+        
+        HttpSession session = request.getSession();
         List<Map<String, String>> members = new ArrayList<Map<String, String>>();
         
         String sql = "SELECT m.StudentID, s.StudentName, c.ClubName, m.JoinDate " +
                      "FROM CLUB_MEMBERSHIP m " +
                      "JOIN STUDENT s ON m.StudentID = s.StudentID " +
                      "JOIN CLUB c ON m.ClubID = c.ClubID " +
+                     "WHERE m.Status = 'active' " +
                      "ORDER BY m.JoinDate DESC";
 
         try (Connection conn = DBConnection.getConnection();
@@ -37,41 +107,61 @@ public class MemberController extends HttpServlet {
                 members.add(member);
             }
             
-            request.setAttribute("members", members);
-            // Forward to the JSP so URL shows members.jsp
-            request.getRequestDispatcher("members.jsp").forward(request, response);
-
+            session.setAttribute("members", members);
+            response.sendRedirect("members.jsp");
+            
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect("admin-dashboard.jsp?error=Data load failed");
+            response.sendRedirect("AdminDashboardController?error=Data load failed");
         }
     }
 
-    // POST: Handles revoking (removing) a student from a club
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        
+    private void handleStudentRegistration(HttpServletRequest request, HttpServletResponse response) 
+            throws IOException {
+        String id = request.getParameter("studentId");
+        String name = request.getParameter("studentName");
+        String email = request.getParameter("studentEmail");
+        String pass = request.getParameter("password");
+
+        try (Connection conn = DBConnection.getConnection()) {
+            String sql = "INSERT INTO STUDENT (StudentID, StudentName, StudentEmail, Password) VALUES (?, ?, ?, ?)";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, id);
+            ps.setString(2, name);
+            ps.setString(3, email);
+            ps.setString(4, pass);
+
+            if (ps.executeUpdate() > 0) {
+                response.sendRedirect("login.jsp?success=Registration successful!");
+            } else {
+                response.sendRedirect("register.jsp?error=Registration failed.");
+            }
+        } catch (SQLException e) {
+            if ("23505".equals(e.getSQLState())) {
+                response.sendRedirect("register.jsp?error=ID or Email already registered.");
+            } else {
+                e.printStackTrace();
+                response.sendRedirect("register.jsp?error=Database error.");
+            }
+        }
+    }
+
+    private void handleRevokeMembership(HttpServletRequest request, HttpServletResponse response) 
+            throws IOException {
         String studentId = request.getParameter("studentId");
         String clubName = request.getParameter("clubName");
-
-        // SQL to delete by student ID and identifying the club by name
         String sql = "DELETE FROM CLUB_MEMBERSHIP WHERE StudentID = ? " +
                      "AND ClubID = (SELECT ClubID FROM CLUB WHERE ClubName = ?)";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            
             ps.setString(1, studentId);
             ps.setString(2, clubName);
             ps.executeUpdate();
-            
-            // Redirect back to .jsp
-            response.sendRedirect("members.jsp?success=Membership revoked successfully");
-
+            response.sendRedirect("MemberController?success=Membership revoked successfully");
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect("members.jsp?error=Remove failed");
+            response.sendRedirect("MemberController?error=Remove failed");
         }
     }
 }

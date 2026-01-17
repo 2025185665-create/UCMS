@@ -8,7 +8,6 @@ import java.util.List;
 public class StudentDAO {
     public List<Student> getAllStudents() {
         List<Student> studentList = new ArrayList<>();
-        // Querying the STUDENT table
         String sql = "SELECT * FROM STUDENT ORDER BY StudentName ASC";
         
         try (Connection conn = DBConnection.getConnection();
@@ -17,10 +16,13 @@ public class StudentDAO {
             
             while (rs.next()) {
                 Student s = new Student();
-                s.setStudentId(rs.getString("StudentID")); // Matching schema
+                s.setStudentId(rs.getString("StudentID"));
                 s.setStudentName(rs.getString("StudentName"));
                 s.setStudentEmail(rs.getString("StudentEmail"));
-                s.setCreatedAt(rs.getTimestamp("CreatedAt"));
+                try {
+                    s.setCreatedAt(rs.getTimestamp("CreatedAt"));
+                } catch (SQLException e) {
+                }
                 studentList.add(s);
             }
         } catch (SQLException e) {

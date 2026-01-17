@@ -1,21 +1,19 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.*, com.ucms2.model.Student, com.ucms2.model.CampusBuzz" %>
 <%
-    // --- LECTURER REQUIREMENT: INTERNAL FORWARDING ---
-    if (request.getAttribute("myClubs") == null) {
-        request.getRequestDispatcher("/MyProfileController").forward(request, response);
+    if (session.getAttribute("myClubs") == null) {
+        response.sendRedirect("MyProfileController?view=profile");
         return;
     }
 
     Student student = (Student) session.getAttribute("student");
-    List myClubs = (List) request.getAttribute("myClubs");
-    List myEvents = (List) request.getAttribute("myEvents");
-    List buzzPosts = (List) request.getAttribute("myBuzzHistory");
-    int claimed = (Integer) request.getAttribute("claimedCount");
-    int certs = (Integer) request.getAttribute("certCount");
+    List myClubs = (List) session.getAttribute("myClubs");
+    List myEvents = (List) session.getAttribute("myEvents");
     
-    String lastLogin = (String) request.getAttribute("lastLogin");
-    int streak = (Integer) request.getAttribute("streak");
+    int claimed = (Integer) session.getAttribute("claimedCount");
+    int certs = (Integer) session.getAttribute("certCount");
+    String lastLogin = (String) session.getAttribute("lastLogin");
+    int streak = (Integer) session.getAttribute("streak");
 
     int CLUB_GOAL = 5;
     int EVENT_GOAL = 10;
@@ -38,14 +36,12 @@
         .gold-border { border-color: #fbbf24 !important; }
         .gold-text { color: #d97706 !important; }
 
-        /* ADDED: Sidebar Active Glow */
         .nav-link.active {
             background: rgba(59, 130, 246, 0.15);
             border-right: 4px solid #3b82f6;
             box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
             color: #fff !important;
         }
-        /* ADDED: Interactive Card Motion */
         .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .interactive-card:hover { transform: translateY(-8px); border-color: #3b82f6; }
     </style>
@@ -57,7 +53,8 @@
             <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
             <a href="events.jsp" class="nav-link">📅 Events</a>
             <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
-            <a href="my-output.jsp" class="nav-link active">👤 My Progress</a>
+            <%-- Link points back to Controller to ensure fresh data --%>
+            <a href="MyProfileController?view=profile" class="nav-link active">👤 My Progress</a>
             <div style="margin-top: auto;"><a href="logout" class="nav-link" style="color: #ef4444;">🚪 Logout</a></div>
         </nav>
 
@@ -81,6 +78,7 @@
                 </div>
             </header>
 
+            <%-- Roadmap Progress Bar --%>
             <div class="bg-white p-2 rounded-full border border-slate-200 mb-10 progress-glow">
                 <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-[#2563eb] via-[#4f46e5] to-[#fbbf24] transition-all duration-1000 ease-out" 

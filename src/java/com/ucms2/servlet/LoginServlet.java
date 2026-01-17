@@ -9,7 +9,7 @@ import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 
-@WebServlet("/login")
+@WebServlet("/LoginServlet") 
 public class LoginServlet extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
@@ -18,6 +18,7 @@ public class LoginServlet extends HttpServlet {
         String adminEmail = request.getParameter("adminEmail");
         String studentId = request.getParameter("studentId");
         String password = request.getParameter("password");
+        String userRoleParam = request.getParameter("userRole"); 
 
         Connection conn = null;
         PreparedStatement ps = null;
@@ -26,10 +27,9 @@ public class LoginServlet extends HttpServlet {
         try {
             conn = DBConnection.getConnection();
 
-            // 1. ADMIN LOGIN (Matches your SQL: AdminEmail and adminPassword)
-            if (adminEmail != null && !adminEmail.trim().isEmpty()) {
-                // Note: adminPassword is lower/camelCase in your SQL script
-                String sql = "SELECT * FROM ADMIN WHERE ADMINEMAIL = ? AND adminPassword = ?";
+            // 1. ADMIN LOGIN LOGIC
+            if ("admin".equals(userRoleParam)) {
+                String sql = "SELECT * FROM ADMIN WHERE ADMINEMAIL = ? AND Password = ?";
                 ps = conn.prepareStatement(sql);
                 ps.setString(1, adminEmail);
                 ps.setString(2, password);
@@ -44,14 +44,15 @@ public class LoginServlet extends HttpServlet {
                     HttpSession session = request.getSession();
                     session.setAttribute("admin", admin);
                     session.setAttribute("userRole", "admin");
-                    response.sendRedirect("admin-dashboard-data");
+                    
+                    response.sendRedirect("AdminDashboardController");
                     return;
                 }
             } 
             
-            // 2. STUDENT LOGIN (Matches your SQL: StudentID and StudentPassword)
-            else if (studentId != null && !studentId.trim().isEmpty()) {
-                String sql = "SELECT * FROM STUDENT WHERE STUDENTID = ? AND STUDENTPASSWORD = ?";
+            // 2. STUDENT LOGIN LOGIC
+            else {
+                String sql = "SELECT * FROM STUDENT WHERE STUDENTID = ? AND Password = ?";
                 ps = conn.prepareStatement(sql);
                 ps.setString(1, studentId);
                 ps.setString(2, password);
@@ -65,16 +66,17 @@ public class LoginServlet extends HttpServlet {
                     HttpSession session = request.getSession();
                     session.setAttribute("student", student);
                     session.setAttribute("userRole", "student");
-                    response.sendRedirect("student-dashboard.jsp");
+                    
+                    response.sendRedirect("MyProfileController");
                     return;
                 }
             }
 
-            response.sendRedirect("login.jsp?error=Invalid Credentials");
+            response.sendRedirect("login.jsp?error=Invalid ID or Password");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect("login.jsp?error=Server Error: " + e.getMessage());
+            e.printStackTrace(); 
+            response.sendRedirect("login.jsp?error=Invalid ID or Password");
         } finally {
             if (rs != null) try { rs.close(); } catch (SQLException e) {}
             if (ps != null) try { ps.close(); } catch (SQLException e) {}

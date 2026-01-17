@@ -18,6 +18,7 @@ public class CampusBuzzDAO {
             while (rs.next()) {
                 CampusBuzz b = new CampusBuzz();
                 b.setPostId(rs.getInt("PostID"));
+                b.setStudentId(rs.getString("StudentID"));
                 b.setContent(rs.getString("Content"));
                 b.setStudentName(rs.getString("StudentName"));
                 b.setCategory(rs.getString("Category"));
@@ -51,22 +52,6 @@ public class CampusBuzzDAO {
         }
     }
 
-    public int getClaimedCountByStudent(String studentId) {
-    int count = 0;
-    String sql = "SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE StudentID = ? AND Status = 'claimed'";
-    try (Connection conn = DBConnection.getConnection();
-         PreparedStatement ps = conn.prepareStatement(sql)) {
-        ps.setString(1, studentId);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            count = rs.getInt(1);
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
-    return count;
-    }
-    
     public boolean createPost(String studentId, String studentName, String content, String category, String venue, String eventDate) {
         String finalContent = content;
         if ("Program".equalsIgnoreCase(category)) {
@@ -81,6 +66,9 @@ public class CampusBuzzDAO {
             ps.setString(3, finalContent);
             ps.setString(4, category);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) { return false; }
+        } catch (SQLException e) { 
+            e.printStackTrace();
+            return false; 
+        }
     }
 }

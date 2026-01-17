@@ -4,30 +4,20 @@ import java.io.Serializable;
 import java.util.Date;
 
 public class CampusBuzz implements Serializable {
-    private int postId;
+    private int postId; // Keeping original name
     private String studentId;
     private String studentName;
     private String content;
-    private String status; // pending, approved, rejected
+    private String status; 
     private int adminId;
     private Date uploadDate;
     private Date approvedDate;
-    private String category; // info, lost_found, program
+    private String category; 
 
     public CampusBuzz() {}
     
-    public CampusBuzz(String studentId, String studentName, String content) {
-        this.studentId = studentId;
-        this.studentName = studentName;
-        this.content = content;
-        this.status = "pending";
-    }
-    
-    // Getters and Setters
-    
     public int getPostId() { return postId; }
     public void setPostId(int postId) { this.postId = postId; }
-    
 
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
