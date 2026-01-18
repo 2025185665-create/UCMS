@@ -85,7 +85,7 @@ public class CampusBuzzServlet extends HttpServlet {
                 }
             }
 
-            response.sendRedirect("CampusBuzzController");
+            response.sendRedirect("campus-buzz.jsp");
 
         } catch (Exception e) {
             e.printStackTrace();

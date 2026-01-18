@@ -14,12 +14,12 @@
     int liveCertsEarned = 0;
     int liveClaimed = 0;
 
-    // 2. Fetch Session Data for Streak and Login (FIXES "CANNOT FIND SYMBOL")
+    // 2. Fetch Session Data for Streak and Login
     String lastLogin = (session.getAttribute("lastLogin") != null) ? (String) session.getAttribute("lastLogin") : "Today";
     Integer streakObj = (Integer) session.getAttribute("streak");
     int streak = (streakObj != null) ? streakObj.intValue() : 1;
 
-    // 3. Declare Database variables for the try-catch block
+    // 3. Declare Database variables
     Connection connOut = null;
     PreparedStatement ps1 = null; ResultSet rs1 = null;
     PreparedStatement ps2 = null; ResultSet rs2 = null;
@@ -36,7 +36,7 @@
         if(rs1.next()) liveEventsJoined = rs1.getInt(1);
 
         // Count Active Clubs
-        ps2 = connOut.prepareStatement("SELECT COUNT(*) FROM CLUB_MEMBERSHIP WHERE StudentID = ?");
+        ps2 = connOut.prepareStatement("SELECT COUNT(*) FROM CLUB_MEMBERSHIP WHERE StudentID = ? AND Status = 'active'");
         ps2.setString(1, student.getStudentId());
         rs2 = ps2.executeQuery();
         if(rs2.next()) liveClubsJoined = rs2.getInt(1);
@@ -63,7 +63,38 @@
         if(connOut != null) connOut.close();
     }
 
-    // 4. Progress Logic
+    // 4. Detailed Scholar Status Logic
+    String scholarTier = "Novice Scholar";
+    String scholarColor = "emerald"; 
+    String textColor = "text-emerald-500";
+    String bgColor = "bg-emerald-50";
+    String borderClass = "border-emerald-100";
+    String scholarEmoji = "📜";
+
+    if (liveCertsEarned >= 10) {
+        scholarTier = "Elite Gold Scholar";
+        scholarColor = "amber";
+        textColor = "text-amber-600";
+        bgColor = "bg-amber-50";
+        borderClass = "border-amber-400";
+        scholarEmoji = "🏆";
+    } else if (liveCertsEarned >= 5) {
+        scholarTier = "Silver Academic";
+        scholarColor = "slate";
+        textColor = "text-slate-600";
+        bgColor = "bg-slate-100";
+        borderClass = "border-slate-300";
+        scholarEmoji = "🎓";
+    } else if (liveCertsEarned >= 1) {
+        scholarTier = "Bronze Scholar";
+        scholarColor = "orange";
+        textColor = "text-orange-600";
+        bgColor = "bg-orange-50";
+        borderClass = "border-orange-200";
+        scholarEmoji = "📜";
+    }
+
+    // Progress Logic
     int CLUB_GOAL = 5;
     int EVENT_GOAL = 10;
     int clubProgress = Math.min((liveClubsJoined * 100) / CLUB_GOAL, 100);
@@ -83,12 +114,7 @@
         .animate-slide { animation: slideIn 0.5s ease-out forwards; }
         .gold-border { border-color: #fbbf24 !important; }
         .gold-text { color: #d97706 !important; }
-        .nav-link.active {
-            background: rgba(59, 130, 246, 0.15);
-            border-right: 4px solid #3b82f6;
-            box-shadow: inset 0 0 10px rgba(59, 130, 246, 0.2);
-            color: #fff !important;
-        }
+        .nav-link.active { background: rgba(59, 130, 246, 0.15); border-right: 4px solid #3b82f6; color: #fff !important; }
         .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .interactive-card:hover { transform: translateY(-8px); border-color: #3b82f6; }
     </style>
@@ -96,11 +122,10 @@
 <body class="bg-[#f8fafc]">
     <div class="dashboard-container">
         <nav class="sidebar">
-        <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-         alt="UCMS Logo"
-         class="h-10 w-auto">
-         <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span></a>
+            <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+                <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
+                <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span>
+            </a>
             <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
             <a href="events.jsp" class="nav-link">📅 Events</a>
             <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
@@ -154,14 +179,16 @@
                     <p class="text-[9px] text-slate-400 mt-3 uppercase font-bold">Goal: Attend 10 Events</p>
                 </div>
 
-                <div class="interactive-card bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 group">
-                    <h3 class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4">Scholar Status</h3>
+                <div class="interactive-card bg-white p-6 rounded-3xl shadow-sm border <%= borderClass %> group">
+                    <h3 class="text-[10px] font-black <%= textColor %> uppercase tracking-widest mb-4">Scholar Status</h3>
                     <div class="flex justify-between items-center h-12">
                         <span class="text-3xl font-black text-[#1e293b]"><%= liveCertsEarned %></span>
-                        <span class="text-3xl drop-shadow-sm">🎓</span>
+                        <span class="text-3xl drop-shadow-sm"><%= scholarEmoji %></span>
                     </div>
                     <div class="mt-4 pt-4 border-t border-slate-50">
-                        <p class="text-[9px] text-slate-400 uppercase font-bold">Official Certifications</p>
+                         <span class="<%= bgColor %> <%= textColor %> px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter">
+                            Rank: <%= scholarTier %>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -171,6 +198,16 @@
                     Unlocked Achievements <span class="h-px bg-slate-100 flex-1"></span>
                 </h2>
                 <div class="flex flex-wrap gap-4">
+                    <% if (liveCertsEarned >= 1) { %>
+                        <div class="flex items-center p-4 <%= bgColor %> border <%= borderClass %> rounded-2xl hover:scale-105 transition-transform">
+                            <span class="text-2xl mr-3"><%= scholarEmoji %></span>
+                            <div>
+                                <h4 class="text-[10px] font-black <%= textColor %> uppercase leading-none"><%= scholarTier %></h4>
+                                <p class="text-[9px] text-slate-500 mt-1">Official Academic Status</p>
+                            </div>
+                        </div>
+                    <% } %>
+
                     <% if (liveClaimed > 0) { %>
                         <div class="flex items-center p-4 bg-emerald-50 border border-emerald-100 rounded-2xl hover:scale-105 transition-transform">
                             <span class="text-2xl mr-3">🛡️</span>
@@ -180,8 +217,9 @@
                             </div>
                         </div>
                     <% } %>
+                    
                     <% if (overallMilestone >= 100) { %>
-                        <div class="flex items-center p-4 bg-amber-50 border border-amber-100 rounded-2xl hover:scale-105 transition-transform border-yellow-400">
+                        <div class="flex items-center p-4 bg-amber-50 border border-yellow-400 rounded-2xl hover:scale-105 transition-transform">
                             <span class="text-2xl mr-3">🏆</span>
                             <div>
                                 <h4 class="text-[10px] font-black text-amber-800 uppercase leading-none">Elite Member</h4>
@@ -189,21 +227,13 @@
                             </div>
                         </div>
                     <% } %>
-                    <% if (liveCertsEarned >= 1) { %>
-                        <div class="flex items-center p-4 bg-indigo-50 border border-indigo-100 rounded-2xl hover:scale-105 transition-transform">
-                            <span class="text-2xl mr-3">📜</span>
-                            <div>
-                                <h4 class="text-[10px] font-black text-indigo-800 uppercase leading-none">Certified</h4>
-                                <p class="text-[9px] text-indigo-600 mt-1">Academic Participant</p>
-                            </div>
-                        </div>
-                    <% } %>
+
                     <% if (streak >= 5) { %>
-                        <div class="flex items-center p-4 bg-orange-50 border border-orange-100 rounded-2xl hover:scale-105 transition-transform border-orange-400">
+                        <div class="flex items-center p-4 bg-orange-50 border border-orange-400 rounded-2xl hover:scale-105 transition-transform">
                             <span class="text-2xl mr-3">⚡</span>
                             <div>
                                 <h4 class="text-[10px] font-black text-orange-800 uppercase leading-none">Reliable Student</h4>
-                                <p class="text-[9px] text-orange-600 mt-1">High Engagement Active</p>
+                                <p class="text-[9px] text-orange-600 mt-1">Active Participation</p>
                             </div>
                         </div>
                     <% } %>
@@ -214,7 +244,6 @@
     <footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
         <div class="max-w-7xl mx-auto px-4">
             <p>&copy; <%= java.time.Year.now() %> University Club Management System. All rights reserved.</p>
-            <p class="mt-1">Made with ❤️ for university students</p>
         </div>
     </footer>
 </body>

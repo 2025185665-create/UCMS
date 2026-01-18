@@ -17,6 +17,8 @@
     String searchVal = request.getParameter("search") != null ? request.getParameter("search") : "";
     String curView = (String) request.getAttribute("viewMode");
 
+    int pendingBuzzCount = 0;
+    
     // 3. Direct DB Sync (Classic Java 1.5 Compatible)
     java.util.Set registeredEvents = new java.util.HashSet();
     java.util.Map liveAttendanceMap = new java.util.HashMap(); 
@@ -39,7 +41,16 @@
         while(rsCount.next()) { 
             liveAttendanceMap.put(new Integer(rsCount.getInt("EventID")), new Integer(rsCount.getInt("cnt"))); 
         }
-        rsCount.close(); stmtCount.close();
+        
+        if ("admin".equals(userRole)) {
+            java.sql.ResultSet rsBuzz = stmtCount.executeQuery("SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE Status = 'pending'");
+            if(rsBuzz.next()) {
+                pendingBuzzCount = rsBuzz.getInt(1);
+            }
+            rsBuzz.close();
+        }
+        stmtCount.close();
+
     } catch(Exception e) { 
         e.printStackTrace(); 
     } finally {
@@ -84,7 +95,12 @@
             <span class="text-2xl font-black tracking-tighter text-blue-400">Events</span></a>
             <a href="<%= "admin".equals(userRole) ? "admin-dashboard.jsp" : "student-dashboard.jsp" %>" class="nav-link">🏠 Dashboard</a>
             <a href="events.jsp" class="nav-link active">📅 Events</a>
-            <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
+                        <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
+                <span>📢 Campus Buzz</span>
+                <% if (pendingBuzzCount > 0) { %>
+                    <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-black items-center justify-center animate-bounce"><%= pendingBuzzCount %></span>
+            </a>
+                <% } %>
             <div style="margin-top: auto;"><a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
         </nav>
 
@@ -239,7 +255,7 @@
                                     <%= isPast ? "Completed" : (current >= finalGoal ? "Full House" : "Registration Open") %>
                                 </span>
                                 <% if ("admin".equals(userRole)) { %>
-                                    <%-- Corrected Delete Action --%>
+                                    <%-- Delete Action --%>
                                     <form action="EventController" method="POST" onsubmit="return confirm('Archive record?')">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="eventId" value="<%= e.getEventId() %>">

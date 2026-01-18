@@ -96,6 +96,21 @@ public class MyProfileServlet extends HttpServlet {
             if(rs.next()) certCount = rs.getInt(1);
             rs.close(); ps.close();
 
+            // NEW: Determine Scholar Tier Logic
+            String scholarTier = "Novice Scholar";
+            String scholarColor = "emerald"; // Default color theme
+
+            if (certCount >= 10) {
+                scholarTier = "Elite Gold Scholar";
+                scholarColor = "amber";
+            } else if (certCount >= 5) {
+                scholarTier = "Silver Academic";
+                scholarColor = "slate";
+            } else if (certCount >= 1) {
+                scholarTier = "Bronze Scholar";
+                scholarColor = "orange";
+            }
+
             // 6. Notifications
             ps = conn.prepareStatement("SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE Status = 'approved'");
             rs = ps.executeQuery();
@@ -112,7 +127,10 @@ public class MyProfileServlet extends HttpServlet {
             session.setAttribute("ticker", tickerContent.toString());
             session.setAttribute("lastLogin", lastLogin);
             session.setAttribute("streak", 5);
-
+            session.setAttribute("certCount", certCount);
+            session.setAttribute("scholarTier", scholarTier);
+            session.setAttribute("scholarColor", scholarColor);
+            
             String view = request.getParameter("view");
             if ("profile".equals(view)) {
                 response.sendRedirect("my-output.jsp");

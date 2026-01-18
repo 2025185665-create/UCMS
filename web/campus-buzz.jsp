@@ -17,18 +17,29 @@
 
     String successParam = request.getParameter("success");
 
-    // Fetch Leave Count for Sidebar
+    // Fetch Counts for Sidebar (Leave and Pending Buzz)
     int leafCount = 0;
+    int pendingBuzzCount = 0; // Initialize correctly
     Connection connC = null; 
     Statement stmtC = null; 
     ResultSet rsC = null;
     try {
         connC = com.ucms2.db.DBConnection.getConnection();
         stmtC = connC.createStatement();
+        
+        // 1. Fetch Leave Count
         rsC = stmtC.executeQuery("SELECT COUNT(*) FROM CLUB_MEMBERSHIP WHERE Status = 'leave_pending'");
         if(rsC.next()) {
             leafCount = rsC.getInt(1);
         }
+        rsC.close();
+
+        // 2. Fetch Pending Buzz Count (Fixes the "Always 1" issue)
+        rsC = stmtC.executeQuery("SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE Status = 'pending'");
+        if(rsC.next()) {
+            pendingBuzzCount = rsC.getInt(1);
+        }
+        
     } catch(Exception e){ 
         e.printStackTrace(); 
     } finally { 
@@ -79,7 +90,6 @@
         </div>
     </div>
     <script>
-        // Auto-hide the popup after 4 seconds
         setTimeout(() => {
             const t = document.getElementById('toast');
             if(t) {
@@ -95,31 +105,31 @@
         <nav class="sidebar">
             <% if ("admin".equals(userRole)) { %>
                 <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-         alt="UCMS Logo"
-         class="h-10 w-auto">
-         <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span></a>
-                <a href="admin-dashboard.jsp" class="nav-link">📊 Overview</a>
+                    <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span>
+                </a>
+                <a href="AdminDashboardController" class="nav-link">📊 Overview</a>
                 <a href="clubs.jsp" class="nav-link">🏛️ Manage Clubs</a>
                 <a href="events.jsp" class="nav-link">📅 Event Control</a>
                 <a href="campus-buzz.jsp" class="nav-link active relative flex items-center justify-between">
                     <span>📢 Moderation</span>
-                    <% if (pending != null && !pending.isEmpty()) { %>
-                        <span class="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-bounce"><%= pending.size() %></span>
+                    <% if (pendingBuzzCount > 0) { %>
+                        <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-black items-center justify-center animate-bounce">
+                            <%= pendingBuzzCount %>
+                        </span>
                     <% } %>
                 </a>
             <% } else { %>
                 <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-         alt="UCMS Logo"
-         class="h-10 w-auto">
-         <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span></a>
+                    <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
+                    <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span>
+                </a>
                 <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
                 <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
                 <a href="events.jsp" class="nav-link">📅 Events</a>
                 <a href="campus-buzz.jsp" class="nav-link active">📢 Campus Buzz</a>
             <% } %>
-            <div style="margin-top: auto;"><a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
+            <div style="margin-top: auto;"><a href="login.jsp" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
         </nav>
 
         <main class="main-content p-10">
@@ -200,38 +210,84 @@
                 </div>
             <% } %>
 
-            <%-- THE FEED --%>
-            <div class="space-y-8" id="buzzFeed">
-                <%
-                    List feedList = "admin".equals(userRole) ? approved : myBuzz;
-                    for (int i = 0; i < feedList.size(); i++) { 
-                        CampusBuzz buzz = (CampusBuzz) feedList.get(i); 
-                        boolean isMine = student != null && student.getStudentId().equals(buzz.getStudentId());
-                        if ("rejected".equals(buzz.getStatus()) && !isMine) continue;
-                %>
-                <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-50 buzz-card transition-all hover:shadow-md <%= isMine ? "my-post ring-2 ring-blue-50" : "" %>">
-                    <div class="flex justify-between items-start mb-4">
-                        <div class="flex items-center gap-3">
+            <%-- THE FEED SECTION --%>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start" id="buzzFeed">
+                
+                <%-- LEFT SIDE: PUBLIC CAMPUS FEED --%>
+                <div class="lg:col-span-2 space-y-8">
+                    <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center tracking-tight">
+                        <span class="w-1.5 h-6 bg-emerald-500 mr-3 rounded-full"></span> Campus Feed
+                    </h3>
+                    <% if (approved.isEmpty()) { %>
+                        <div class="p-12 bg-white rounded-[2rem] text-center border-2 border-dashed border-slate-100 text-slate-400 font-bold italic">No public buzz yet.</div>
+                    <% } else { 
+                        for (int i = 0; i < approved.size(); i++) { 
+                            CampusBuzz buzz = (CampusBuzz) approved.get(i); 
+                            boolean isMineInPublic = student != null && student.getStudentId().equals(buzz.getStudentId());
+                    %>
+                    <div class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-50 transition-all hover:shadow-md <%= isMineInPublic ? "ring-2 ring-blue-400/20 bg-blue-50/5" : "" %>">
+                        <div class="flex justify-between items-start mb-4">
                             <span class="text-[11px] font-black text-blue-600 uppercase tracking-widest"><%= buzz.getCategory() %></span>
-                            <% if(isMine) { %>
-                                <% if("pending".equals(buzz.getStatus())) { %>
-                                    <span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[9px] font-black uppercase">Pending ⏳</span>
-                                <% } else if("rejected".equals(buzz.getStatus())) { %>
-                                    <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-[9px] font-black uppercase">Rejected ❌</span>
-                                <% } %>
-                            <% } %>
+                            <% if(isMineInPublic) { %><span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase">Live ✅</span><% } %>
                         </div>
-                        <% if("Lost & Found".equals(buzz.getCategory()) && !"claimed".equals(buzz.getStatus())) { %>
-                            <form action="CampusBuzzController" method="POST">
-                                <input type="hidden" name="action" value="claim"><input type="hidden" name="buzzId" value="<%= buzz.getPostId() %>">
-                                <button type="submit" class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white transition">Mark Claimed</button>
-                            </form>
-                        <% } %>
+                        <p class="text-slate-700 whitespace-pre-wrap font-medium text-lg leading-relaxed"><%= buzz.getContent() %></p>
+                        
+                        <div class="mt-6 pt-6 border-t border-slate-50 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <%-- AVATAR CIRCLE --%>
+                                <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-black text-slate-500 uppercase">
+                                    <%= buzz.getStudentName().substring(0,1) %>
+                                </div>
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <%= isMineInPublic ? "YOU" : buzz.getStudentName() %>
+                                </span>
+                            </div>
+                            <span class="text-[10px] font-medium text-slate-300 uppercase tracking-tight"><%= buzz.getUploadDate() %></span>
+                        </div>
                     </div>
-                    <p class="text-slate-700 whitespace-pre-wrap font-medium text-lg leading-relaxed <%= "claimed".equals(buzz.getStatus()) ? "opacity-50" : "" %>"><%= buzz.getContent() %></p>
-                    <div class="mt-6 pt-6 border-t border-slate-50 flex justify-between items-center">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"><%= isMine ? "You posted this" : buzz.getStudentName() %></span>
-                        <span class="text-[10px] font-medium text-slate-300 uppercase"><%= buzz.getUploadDate() %></span>
+                    <% } } %>
+                </div>
+
+                <%-- RIGHT SIDE: MY PERSONAL SUBMISSIONS --%>
+                <% if (!"admin".equals(userRole)) { %>
+                <div class="space-y-8">
+                    <h3 class="text-xl font-black text-slate-800 mb-6 flex items-center tracking-tight">
+                        <span class="w-1.5 h-6 bg-blue-600 mr-3 rounded-full"></span> My Submissions
+                    </h3>
+                    <div class="space-y-4">
+                        <% if (myBuzz.isEmpty()) { %>
+                            <div class="p-8 bg-white/50 rounded-[2rem] text-center border-2 border-dashed border-slate-200 text-slate-400 text-xs font-bold">No history yet.</div>
+                        <% } else { 
+                            for (int j = 0; j < myBuzz.size(); j++) { 
+                                CampusBuzz mBuzz = (CampusBuzz) myBuzz.get(j); 
+                        %>
+                            <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-sm relative overflow-hidden">
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest"><%= mBuzz.getCategory() %></span>
+                                    <% if("pending".equals(mBuzz.getStatus())) { %>
+                                        <span class="text-[8px] font-black text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">PENDING</span>
+                                    <% } else if("rejected".equals(mBuzz.getStatus())) { %>
+                                        <span class="text-[8px] font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-full">REJECTED</span>
+                                    <% } else if("claimed".equals(mBuzz.getStatus())) { %>
+                                        <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">CLAIMED ✅</span>
+                                    <% } else { %>
+                                        <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">LIVE</span>
+                                    <% } %>
+                                </div>
+                                <p class="text-sm text-slate-600 font-medium line-clamp-3 leading-relaxed <%= "claimed".equals(mBuzz.getStatus()) ? "opacity-50 line-through" : "" %>"><%= mBuzz.getContent() %></p>
+                                
+                                <%-- CLAIM BUTTON --%>
+                                <% if("Lost & Found".equals(mBuzz.getCategory()) && !"claimed".equals(mBuzz.getStatus()) && "approved".equals(mBuzz.getStatus())) { %>
+                                    <form action="CampusBuzzController" method="POST" class="mt-4">
+                                        <input type="hidden" name="action" value="claim">
+                                        <input type="hidden" name="buzzId" value="<%= mBuzz.getPostId() %>">
+                                        <button type="submit" class="w-full bg-emerald-50 text-emerald-600 py-2 rounded-xl text-[9px] font-black uppercase hover:bg-emerald-600 hover:text-white transition-all">
+                                            Mark as Claimed
+                                        </button>
+                                    </form>
+                                <% } %>
+                            </div>
+                        <% } } %>
                     </div>
                 </div>
                 <% } %>
@@ -247,15 +303,12 @@
         else { details.classList.add('hidden'); }
     }
     </script>
-    <!-- Footer -->
-<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
-    <div class="max-w-7xl mx-auto px-4">
-        <p>
-            &copy; <%= java.time.Year.now() %> University Club Management System. All rights reserved.
-        </p>
-        <p class="mt-1">Made with ❤️ for university students</p>
-    </div>
-</footer>
-
+    
+    <footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; <%= java.time.Year.now() %> University Club Management System. All rights reserved.</p>
+            <p class="mt-1">Made with ❤️ for university students</p>
+        </div>
+    </footer>
 </body>
 </html>

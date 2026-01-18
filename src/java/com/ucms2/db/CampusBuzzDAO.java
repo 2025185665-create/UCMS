@@ -9,8 +9,9 @@ public class CampusBuzzDAO {
 
     public List<CampusBuzz> getBuzzByStatus(String status) {
         List<CampusBuzz> list = new ArrayList<>();
-        String sql = "SELECT * FROM CAMPUS_BUZZ WHERE Status = ? ORDER BY UploadDate DESC";
-        try (Connection conn = DBConnection.getConnection();
+        String sql = "SELECT * FROM CAMPUS_BUZZ WHERE Status = ? ORDER BY " 
+               + (status.equals("approved") ? "ApprovedDate" : "UploadDate") + " DESC";
+            try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ResultSet rs = ps.executeQuery();

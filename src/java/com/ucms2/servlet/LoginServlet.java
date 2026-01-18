@@ -45,7 +45,7 @@ public class LoginServlet extends HttpServlet {
                     session.setAttribute("admin", admin);
                     session.setAttribute("userRole", "admin");
                     
-                    response.sendRedirect("AdminDashboardController");
+                    response.sendRedirect("admin-dashboard.jsp");
                     return;
                 }
             } 
@@ -67,7 +67,7 @@ public class LoginServlet extends HttpServlet {
                     session.setAttribute("student", student);
                     session.setAttribute("userRole", "student");
                     
-                    response.sendRedirect("MyProfileController");
+                    response.sendRedirect("student-dashboard.jsp");
                     return;
                 }
             }
