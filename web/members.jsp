@@ -79,7 +79,7 @@
          alt="UCMS Logo"
          class="h-10 w-auto">
          <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span></a>
-            <a href="AdminDashboardController" class="nav-link">📊 Overview</a>
+            <a href="AdminDashboardController" class="nav-link">🏠 Dashboard</a>
             <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
             <a href="EventController" class="nav-link">📅 Event Control</a>
             <a href="MemberController" class="nav-link active">👥 User Records</a>

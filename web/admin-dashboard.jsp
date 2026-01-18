@@ -92,12 +92,12 @@
             alt="UCMS Logo"
             class="h-10 w-auto">
             <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span></a>
-            <a href="admin-dashboard.jsp" class="nav-link active">📊 Overview</a>
+            <a href="admin-dashboard.jsp" class="nav-link active">🏠 Dashboard</a>
             <a href="clubs.jsp" class="nav-link">🏛️ Manage Clubs</a>
             <a href="events.jsp" class="nav-link">📅 Event Control</a>
             <a href="members.jsp" class="nav-link">👥 User Records</a>            
             <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
-                <span>📢 Moderation</span>
+                <span>📢 Campus Buzz</span>
                 <% if (pendingBuzzCount > 0) { %>
                     <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-black items-center justify-center animate-bounce"><%= pendingBuzzCount %></span>
                 <% } %>

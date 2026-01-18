@@ -94,7 +94,9 @@
             class="h-10 w-auto">
             <span class="text-2xl font-black tracking-tighter text-blue-400">Events</span></a>
             <a href="<%= "admin".equals(userRole) ? "admin-dashboard.jsp" : "student-dashboard.jsp" %>" class="nav-link">🏠 Dashboard</a>
-            <a href="events.jsp" class="nav-link active">📅 Events</a>
+            <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
+            <a href="events.jsp" class="nav-link active">📅 Event Control</a>
+            <a href="members.jsp" class="nav-link">👥 User Records</a>
                         <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
                 <span>📢 Campus Buzz</span>
                 <% if (pendingBuzzCount > 0) { %>
