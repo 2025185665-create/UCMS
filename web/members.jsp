@@ -108,7 +108,6 @@
 
     <a href="MemberController" class="nav-link active">👥 User Records</a>
 
-    <!-- ✅ Campus Buzz -->
     <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
         <span>📢 Campus Buzz</span>
         <% if (pendingBuzzCount > 0) { %>
