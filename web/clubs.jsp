@@ -88,7 +88,7 @@
         </span>
     <% } %>
 </a>
-
+<!-- STUDENT SIDEBAR -->
             <% } else { %>
                 <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
                 <a href="my-output.jsp" class="nav-link ">📊 My Progress</a>

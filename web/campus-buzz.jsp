@@ -120,6 +120,7 @@
                         </span>
                     <% } %>
                 </a>
+                <!-- STUDENT SIDEBAR -->
             <% } else { %>
                 <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
                     <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
