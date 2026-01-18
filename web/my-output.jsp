@@ -124,12 +124,14 @@
         <nav class="sidebar">
             <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
                 <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
-                <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span>
+                <span class="text-2xl font-black tracking-tighter text-blue-400">Progress</span>
             </a>
             <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
-            <a href="events.jsp" class="nav-link">📅 Events</a>
+            <a href="my-output.jsp" class="nav-link active">📊 My Progress</a>
+            <a href="clubs.jsp" class="nav-link ">🔍 Explore Clubs</a>
+            <a href="events.jsp" class="nav-link">📅 Campus Events</a>
             <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
-            <a href="my-output.jsp" class="nav-link active">👤 My Progress</a>
+           
             <div style="margin-top: auto;"><a href="logout" class="nav-link" style="color: #ef4444;">🚪 Logout</a></div>
         </nav>
 

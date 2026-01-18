@@ -5,6 +5,27 @@
         response.sendRedirect("login.jsp"); 
         return; 
     }
+    
+        int pendingBuzzCount = 0;
+        Connection buzzConn = null;
+
+        try {
+         buzzConn = DBConnection.getConnection();
+            Statement stmtBuzz = buzzConn.createStatement();
+            ResultSet rsBuzz = stmtBuzz.executeQuery(
+             "SELECT COUNT(*) FROM CAMPUS_BUZZ WHERE Status = 'pending'"
+            );
+            if (rsBuzz.next()) {
+             pendingBuzzCount = rsBuzz.getInt(1);
+            }
+            rsBuzz.close();
+            stmtBuzz.close();
+        } catch (Exception e) {
+         e.printStackTrace();
+        } finally {
+         if (buzzConn != null) try { buzzConn.close(); } catch (Exception e) {}
+        }
+
 
     String viewStudentId = request.getParameter("studentId"); // For Transcript View
     List sessionMembers = (List) session.getAttribute("members");
@@ -74,17 +95,35 @@
 <body class="bg-[#f8fafc]">
     <div class="dashboard-container">
         <nav class="sidebar">
-            <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-         alt="UCMS Logo"
-         class="h-10 w-auto">
-         <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span></a>
-            <a href="AdminDashboardController" class="nav-link">🏠 Dashboard</a>
-            <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
-            <a href="EventController" class="nav-link">📅 Event Control</a>
-            <a href="MemberController" class="nav-link active">👥 User Records</a>
-            <div style="margin-top: auto;"><a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
-        </nav>
+    <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+        <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+             alt="UCMS Logo"
+             class="h-10 w-auto">
+        <span class="text-2xl font-black tracking-tighter text-blue-400">Records</span>
+    </a>
+
+    <a href="AdminDashboardController" class="nav-link">🏠 Dashboard</a>
+    <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
+    <a href="EventController" class="nav-link">📅 Event Control</a>
+
+    <a href="MemberController" class="nav-link active">👥 User Records</a>
+
+    <!-- ✅ Campus Buzz -->
+    <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
+        <span>📢 Campus Buzz</span>
+        <% if (pendingBuzzCount > 0) { %>
+            <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white 
+                         text-[10px] font-black items-center justify-center animate-bounce">
+                <%= pendingBuzzCount %>
+            </span>
+        <% } %>
+    </a>
+
+    <div style="margin-top: auto;">
+        <a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a>
+    </div>
+</nav>
+
 
         <main class="main-content p-10">
 

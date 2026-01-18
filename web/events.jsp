@@ -88,23 +88,45 @@
 
     <div class="dashboard-container">
         <nav class="sidebar">
-            <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-            <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-            alt="UCMS Logo"
-            class="h-10 w-auto">
-            <span class="text-2xl font-black tracking-tighter text-blue-400">Events</span></a>
-            <a href="<%= "admin".equals(userRole) ? "admin-dashboard.jsp" : "student-dashboard.jsp" %>" class="nav-link">🏠 Dashboard</a>
-            <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
-            <a href="events.jsp" class="nav-link active">📅 Event Control</a>
-            <a href="members.jsp" class="nav-link">👥 User Records</a>
-                        <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
-                <span>📢 Campus Buzz</span>
-                <% if (pendingBuzzCount > 0) { %>
-                    <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-[10px] font-black items-center justify-center animate-bounce"><%= pendingBuzzCount %></span>
-            </a>
-                <% } %>
-            <div style="margin-top: auto;"><a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
-        </nav>
+    <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+        <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
+             alt="UCMS Logo"
+             class="h-10 w-auto">
+        <span class="text-2xl font-black tracking-tighter text-blue-400">
+            <%= "admin".equals(userRole) ? "Events" : "Events" %>
+        </span>
+    </a>
+
+    <% if ("admin".equals(userRole)) { %>
+        <a href="admin-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
+        <a href="ClubController" class="nav-link">🏛️ Manage Clubs</a>
+        <a href="events.jsp" class="nav-link active">📅 Event Control </a>
+        <a href="members.jsp" class="nav-link">👥 User Records</a>
+
+        <a href="campus-buzz.jsp" class="nav-link relative flex items-center justify-between">
+            <span>📢 Campus Buzz</span>
+            <% if (pendingBuzzCount > 0) { %>
+                <span class="relative inline-flex h-5 w-5 rounded-full bg-red-500 text-white
+                             text-[10px] font-black items-center justify-center animate-bounce">
+                    <%= pendingBuzzCount %>
+                </span>
+            <% } %>
+        </a>
+
+    <% } else { %>
+        <!-- STUDENT SIDEBAR -->
+        <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
+        <a href="my-output.jsp" class="nav-link">📊 My Progress</a>
+        <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
+        <a href="events.jsp" class="nav-link active">📅 Campus Events</a>
+        <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
+    <% } %>
+
+    <div style="margin-top:auto">
+        <a href="logout" class="nav-link text-red-400 font-bold">🚪 Logout</a>
+    </div>
+</nav>
+
 
         <main class="main-content p-10">
             <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">

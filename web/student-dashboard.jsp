@@ -111,7 +111,7 @@
             <a href="student-dashboard.jsp" class="nav-link active">🏠 Dashboard</a>
             <a href="my-output.jsp" class="nav-link">📊 My Progress</a>
             <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
-            <a href="events.jsp" class="nav-link">📅 Upcoming Events</a>
+            <a href="events.jsp" class="nav-link">📅 Campus Events</a>
             <a href="campus-buzz.jsp" class="nav-link">📢 Campus Buzz</a>
             <div style="margin-top: auto;"><a href="logout" class="nav-link text-red-400">🚪 Logout</a></div>
         </nav>

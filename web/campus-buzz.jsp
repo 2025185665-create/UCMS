@@ -106,7 +106,7 @@
             <% if ("admin".equals(userRole)) { %>
                 <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
                     <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
-                    <span class="text-2xl font-black tracking-tighter text-blue-400">Admin</span>
+                    <span class="text-2xl font-black tracking-tighter text-blue-400">Campus Buzz</span>
                 </a>
                 <a href="AdminDashboardController" class="nav-link">🏠 Dashboard</a>
                 <a href="clubs.jsp" class="nav-link">🏛️ Manage Clubs</a>
@@ -123,11 +123,12 @@
             <% } else { %>
                 <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
                     <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="UCMS Logo" class="h-10 w-auto">
-                    <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span>
+                    <span class="text-2xl font-black tracking-tighter text-blue-400">Campus buzz</span>
                 </a>
                 <a href="student-dashboard.jsp" class="nav-link">🏠 Dashboard</a>
+                <a href="my-output.jsp" class="nav-link ">📊 My Progress</a>
                 <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
-                <a href="events.jsp" class="nav-link">📅 Events</a>
+                <a href="events.jsp" class="nav-link">📅 Campus Events</a>
                 <a href="campus-buzz.jsp" class="nav-link active">📢 Campus Buzz</a>
             <% } %>
             <div style="margin-top: auto;"><a href="login.jsp" class="nav-link text-red-400 font-bold">🚪 Logout</a></div>
