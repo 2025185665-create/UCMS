@@ -133,7 +133,7 @@
         <%-- 2. ADD CLUB FORM --%>
         <% } else if ("add".equals(action) && "admin".equals(userRole)) { %>
             <div class="max-w-3xl mx-auto bg-white p-12 rounded-[2.5rem] border shadow-2xl animate-fade">
-                <h2 class="text-3xl font-black text-slate-800 mb-8 tracking-tight italic">Establish New Society</h2>
+                <h2 class="text-3xl font-black text-slate-800 mb-8">Establish New Society</h2>
                 <form action="ClubController" method="POST" class="space-y-8">
                     <input type="hidden" name="action" value="create">
                     <div>
@@ -156,7 +156,7 @@
             <%-- CLUBS DIRECTORY VIEW --%>
             <header class="flex flex-col md:flex-row justify-between items-end mb-12 gap-8">
                 <div>
-                    <h1 class="text-5xl font-black text-slate-800 tracking-tighter italic">Societies Directory</h1>
+                    <h1 class="text-5xl font-black text-slate-800">Societies Directory</h1>
                     <p class="text-slate-400 font-bold mt-2 text-sm uppercase tracking-widest">Official Campus Organizations</p>
                 </div>
                 
