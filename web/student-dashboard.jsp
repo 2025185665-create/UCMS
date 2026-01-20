@@ -9,7 +9,7 @@
     Student student = (Student) session.getAttribute("student");
     String ticker = (String) session.getAttribute("ticker");
 
-    // --- DIRECT DATABASE SYNC (Ensures instant updates) ---
+    // --- 1. DIRECT DATABASE SYNC (Ensures instant updates) ---
     int liveEventCount = 0;
     int liveClubCount = 0;
     List liveEventsList = new ArrayList();
@@ -19,21 +19,21 @@
     try {
         connDash = com.ucms2.db.DBConnection.getConnection();
         
-        // 1. Live Event Count
+        // Live Event Count
         PreparedStatement psE = connDash.prepareStatement("SELECT COUNT(*) FROM EVENT_REGISTRATION WHERE StudentID = ?");
         psE.setString(1, student.getStudentId());
         ResultSet rsE = psE.executeQuery();
         if(rsE.next()) liveEventCount = rsE.getInt(1);
         rsE.close(); psE.close();
 
-        // 2. Live Club Count
+        // Live Club Count
         PreparedStatement psC = connDash.prepareStatement("SELECT COUNT(*) FROM CLUB_MEMBERSHIP WHERE StudentID = ? AND Status = 'active'");
         psC.setString(1, student.getStudentId());
         ResultSet rsC = psC.executeQuery();
         if(rsC.next()) liveClubCount = rsC.getInt(1);
         rsC.close(); psC.close();
 
-        // 3. Live Events List (Fix for empty "Upcoming Events")
+        // Live Events List (Fix for empty "Upcoming Events")
         PreparedStatement psL = connDash.prepareStatement(
             "SELECT e.* FROM EVENT e JOIN EVENT_REGISTRATION r ON e.EventID = r.EventID " +
             "WHERE r.StudentID = ? AND e.EventDate >= CURRENT_DATE ORDER BY e.EventDate ASC");
@@ -47,7 +47,7 @@
         }
         rsL.close(); psL.close();
 
-        // 4. Live Clubs List (Fix for instant Club list update)
+        // Live Clubs List
         PreparedStatement psCl = connDash.prepareStatement(
             "SELECT c.ClubName FROM CLUB c JOIN CLUB_MEMBERSHIP m ON c.ClubID = m.ClubID " +
             "WHERE m.StudentID = ? AND m.Status = 'active'");
@@ -64,19 +64,55 @@
         if(connDash != null) try { connDash.close(); } catch(Exception e){}
     }
 
-    // Assign live data to variables used in HTML
+    // 2.Ticker Logic
+    StringBuilder tickerBuilder = new StringBuilder();
+        if (liveEventsList != null && !liveEventsList.isEmpty()) {
+            for (int i = 0; i < liveEventsList.size(); i++) {
+                Event e = (Event) liveEventsList.get(i);
+                String formattedDate = new SimpleDateFormat("MMM dd, yyyy").format(e.getEventDate());
+
+                // This creates the format: | Name - Date |
+                tickerBuilder.append("| ")
+                             .append(e.getEventName())
+                             .append(" - ")
+                             .append(formattedDate)
+                             .append(" | ");
+            }
+        } else {
+            tickerBuilder.append("| Welcome to UCMS! No upcoming events registered yet. |");
+        }
+        String dynamicTicker = tickerBuilder.toString();
+
+    // Assign variables for HTML
     List myEvents = liveEventsList;
     List myClubs = liveClubsList;
 
-    int CLUB_GOAL = 5;
-    int EVENT_GOAL = 10;
-    int clubPercent = Math.min((liveClubCount * 100) / CLUB_GOAL, 100);
-    int eventPercent = Math.min((liveEventCount * 100) / EVENT_GOAL, 100);
+    int clubPercent = Math.min((liveClubCount * 100) / 5, 100);
+    int eventPercent = Math.min((liveEventCount * 100) / 10, 100);
     int overallProgress = (clubPercent + eventPercent) / 2;
     String progressColor = (overallProgress >= 100) ? "#fbbf24" : "#3b82f6";
 
-    Calendar cal = Calendar.getInstance();
-    int hour = cal.get(Calendar.HOUR_OF_DAY);
+    // --- 3. CALENDAR & GREETING LOGIC ---
+    Calendar baseTime = Calendar.getInstance();
+    int currentMonth = baseTime.get(Calendar.MONTH);
+    int currentYear = baseTime.get(Calendar.YEAR);
+    int hour = baseTime.get(Calendar.HOUR_OF_DAY);
+
+    String paramMonth = request.getParameter("month");
+    String paramYear = request.getParameter("year");
+    int displayMonth = (paramMonth != null) ? Integer.parseInt(paramMonth) : currentMonth;
+    int displayYear = (paramYear != null) ? Integer.parseInt(paramYear) : currentYear;
+
+    Calendar navCal = Calendar.getInstance();
+    navCal.set(displayYear, displayMonth, 1);
+
+    int nextMonth = displayMonth + 1; int nextYear = displayYear;
+    if (nextMonth > 11) { nextMonth = 0; nextYear++; }
+    int prevMonth = displayMonth - 1; int prevYear = displayYear;
+    if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+
+    String monthName = new java.text.DateFormatSymbols().getMonths()[displayMonth];
+
     String greeting, greetingIcon;
     if (hour >= 5 && hour < 12) { greeting = "Good Morning"; greetingIcon = "🌅"; }
     else if (hour >= 12 && hour < 17) { greeting = "Good Afternoon"; greetingIcon = "☀️"; }
@@ -103,11 +139,10 @@
 <body class="bg-[#f8fafc]">
     <div class="dashboard-container">
         <nav class="sidebar">
-         <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
-         <img src="<%= request.getContextPath() %>/img/ucms_logo.png"
-         alt="UCMS Logo"
-         class="h-10 w-auto">
-         <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span></a>
+            <a href="index.jsp" class="sidebar-brand flex items-center gap-3">
+                <img src="<%= request.getContextPath() %>/img/ucms_logo.png" alt="Logo" class="h-10 w-auto">
+                <span class="text-2xl font-black tracking-tighter text-blue-400">Student</span>
+            </a>
             <a href="student-dashboard.jsp" class="nav-link active">🏠 Dashboard</a>
             <a href="my-output.jsp" class="nav-link">📊 My Progress</a>
             <a href="clubs.jsp" class="nav-link">🔍 Explore Clubs</a>
@@ -117,25 +152,28 @@
         </nav>
 
         <main class="main-content">
-            <%-- Ticker --%>
-            <div class="mb-8 bg-[#1e293b] text-white rounded-xl py-2 px-2 flex items-center shadow-lg">
-                <div class="bg-[#3b82f6] px-4 py-1 font-black text-[11px] uppercase tracking-widest rounded-md mr-4">NEWS</div>
+            <%-- Dynamic Ticker --%>
+            <div class="mb-8 bg-[#1e293b] text-white rounded-xl py-2 px-2 flex items-center shadow-lg border border-blue-500/20">
+                <div class="bg-[#3b82f6] px-4 py-1 font-black text-[11px] uppercase tracking-widest rounded-md mr-4 shadow-sm">NEWS</div>
                 <div class="ticker-wrap flex-1">
-                    <div class="ticker-move text-sm font-medium italic opacity-90"><%= ticker != null ? ticker : "Welcome to UCMS Dashboard!" %></div>
+                    <div class="ticker-move text-sm font-bold opacity-90 tracking-wide text-blue-100 uppercase">
+                        <%= dynamicTicker %> <%= dynamicTicker %>
+                    </div>
                 </div>
             </div>
 
             <header class="mb-10">
-                <h1 class="text-4xl font-black text-[#1e293b]"><%= greeting %>, <%= student.getStudentName() %> <%= greetingIcon %></h1>
+                <h1 class="text-4xl font-black text-[#1e293b] tracking-tight"><%= greeting %>, <%= student.getStudentName() %> <%= greetingIcon %></h1>
                 <p class="text-slate-500 mt-2 text-lg">Your live campus summary.</p>
             </header>
 
+            <%-- Summary Cards --%>
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
                 <div class="interactive-card lg:col-span-4 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
                         <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Goal Status</p>
                         <h3 class="text-3xl font-black text-[#1e293b] mt-1">Roadmap</h3>
-                        <a href="my-output.jsp" class="text-[#3b82f6] text-[11px] font-bold mt-3 block uppercase">View Details →</a>
+                        <a href="my-output.jsp" class="text-[#3b82f6] text-[11px] font-bold mt-3 block uppercase">Details →</a>
                     </div>
                     <div class="relative w-20 h-20 flex items-center justify-center">
                         <svg class="w-full h-full transform -rotate-90">
@@ -157,28 +195,30 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <%-- Clubs --%>
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <h3 class="text-lg font-black text-slate-800 mb-4 flex items-center">
                         <span class="w-1.5 h-5 bg-blue-500 rounded-full mr-2"></span> My Active Clubs
                     </h3>
                     <div class="space-y-3">
-                        <% if (myClubs != null && !myClubs.isEmpty()) { 
+                        <% if (!myClubs.isEmpty()) { 
                             for (int i=0; i<myClubs.size(); i++) { %>
                                 <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 font-bold text-slate-700 text-sm">
                                     🏛️ <%= myClubs.get(i) %>
                                 </div>
                         <% } } else { %>
-                            <p class="text-slate-400 italic text-sm">No active club memberships found.</p>
+                            <p class="text-slate-400 italic text-sm">No active memberships found.</p>
                         <% } %>
                     </div>
                 </div>
 
+                <%-- Events --%>
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
                     <h3 class="text-lg font-black text-slate-800 mb-4 flex items-center">
                         <span class="w-1.5 h-5 bg-emerald-500 rounded-full mr-2"></span> Upcoming Events
                     </h3>
                     <div class="space-y-3">
-                        <% if (myEvents != null && !myEvents.isEmpty()) { 
+                        <% if (!myEvents.isEmpty()) { 
                             for (int i=0; i < myEvents.size(); i++) { 
                                 Event ev = (Event) myEvents.get(i); %>
                                 <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
@@ -192,27 +232,40 @@
                 </div>
             </div>
 
+            <%-- Schedule Calendar --%>
             <section class="bg-white p-8 rounded-[2.5rem] border border-slate-100 mb-10 shadow-sm">
-                <h3 class="text-xl font-black mb-6 text-slate-800">My Schedule</h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight">My Schedule</h3>
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-bold text-slate-600 uppercase tracking-tighter"><%= monthName %> <%= displayYear %></span>
+                        <div class="flex bg-slate-100 p-1 rounded-lg">
+                            <a href="student-dashboard.jsp?month=<%= prevMonth %>&year=<%= prevYear %>" class="p-1 hover:bg-white rounded transition-all">⬅️</a>
+                            <a href="student-dashboard.jsp?month=<%= nextMonth %>&year=<%= nextYear %>" class="p-1 hover:bg-white rounded transition-all">➡️</a>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-7 gap-2">
-                    <% String[] dayHeaders = {"S", "M", "T", "W", "T", "F", "S"};
-                       for(int h=0; h<dayHeaders.length; h++) { %> <div class="text-center text-[10px] font-black text-slate-300 py-2"><%= dayHeaders[h] %></div> <% } %>
-                    <% 
-                        Map eventMap = new HashMap();
-                        if(myEvents != null) {
-                            for(int j=0; j<myEvents.size(); j++) {
-                                Event ev = (Event) myEvents.get(j);
-                                eventMap.put(new SimpleDateFormat("yyyy-MM-dd").format(ev.getEventDate()), "active");
-                            }
+                    <% String[] dHeaders = {"S", "M", "T", "W", "T", "F", "S"};
+                       for(int h=0; h<7; h++) { %><div class="text-center text-[10px] font-black text-slate-300 py-2"><%= dHeaders[h] %></div><% } %>
+                    
+                    <%  
+                        Map dashEventMap = new HashMap();
+                        for(int j=0; j<myEvents.size(); j++) {
+                            Event ev = (Event) myEvents.get(j);
+                            dashEventMap.put(new SimpleDateFormat("yyyy-MM-dd").format(ev.getEventDate()), "active");
                         }
-                        Calendar c = Calendar.getInstance(); c.set(Calendar.DAY_OF_MONTH, 1);
-                        int start = c.get(Calendar.DAY_OF_WEEK) - 1; int total = c.getActualMaximum(Calendar.DAY_OF_MONTH);
-                        for(int i=0; i<start; i++) { %> <div></div> <% }
-                        for(int d=1; d<=total; d++) {
-                            String key = String.format("%04d-%02d-%02d", c.get(Calendar.YEAR), c.get(Calendar.MONTH)+1, d);
-                            boolean isEv = eventMap.containsKey(key);
+                        
+                        int startSlots = navCal.get(Calendar.DAY_OF_WEEK) - 1; 
+                        int totalDays = navCal.getActualMaximum(Calendar.DAY_OF_MONTH);
+                        
+                        for(int i=0; i<startSlots; i++) { %> <div></div> <% }
+                        for(int d=1; d<=totalDays; d++) {
+                            String key = String.format("%04d-%02d-%02d", displayYear, displayMonth + 1, d);
+                            boolean isEv = dashEventMap.containsKey(key);
                     %>
-                        <div class="h-12 flex items-center justify-center rounded-xl transition-all <%= isEv ? "bg-emerald-500 text-white font-black shadow-lg" : "text-slate-400 hover:bg-slate-50" %>">
+                        <div class="h-12 flex items-center justify-center rounded-xl transition-all 
+                                    <%= isEv ? "bg-emerald-500 text-white font-black shadow-md scale-105" : "text-slate-400 hover:bg-slate-50" %>">
                             <span class="text-xs"><%= d %></span>
                         </div>
                     <% } %>
@@ -220,14 +273,13 @@
             </section>
         </main>
     </div>
-<footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
-    <div class="max-w-7xl mx-auto px-4">
-        <p>
-            &copy; <%= java.time.Year.now() %> University Club Management System. 
-            All rights reserved.
-        </p>
-        <p class="mt-1">Made with ❤️ for university students</p>
-    </div>
-</footer>
+    <footer class="bg-white border-t border-gray-200 text-gray-500 text-sm text-center py-6">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>
+                &copy; <%= java.time.Year.now() %> University Club Management System. All rights reserved.
+            </p>
+            <p class="mt-1">Made with ❤️ for university students</p>
+        </div>
+    </footer>
 </body>
 </html>

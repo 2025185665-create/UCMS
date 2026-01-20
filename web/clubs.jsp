@@ -223,10 +223,10 @@
                                         <% if (count > 0) { %>
                                             <span title="Society has active members" class="text-slate-200 font-black text-[11px] uppercase tracking-widest cursor-not-allowed">Delete 🔒</span>
                                         <% } else { %>
-                                            <form action="ClubController" method="POST" onsubmit="return confirm('Permanently dissolve this society?')">
+                                            <form action="ClubController" method="POST" onsubmit="return confirm('Permanently delete this society?')">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="clubId" value="<%= cid %>">
-                                                <button type="submit" class="text-red-400 font-black text-[11px] uppercase tracking-widest hover:text-red-600">Dissolve</button>
+                                                <button type="submit" class="text-red-400 font-black text-[11px] uppercase tracking-widest hover:text-red-600">Delete</button>
                                             </form>
                                         <% } %>
                                     <% } else { %>

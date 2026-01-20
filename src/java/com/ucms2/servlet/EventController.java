@@ -50,82 +50,87 @@ public class EventController extends HttpServlet {
         request.getRequestDispatcher("events.jsp").forward(request, response);
     }
 
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) 
-            throws ServletException, IOException {
-        
-        HttpSession session = request.getSession();
-        String userRole = (String) session.getAttribute("userRole");
-        String action = request.getParameter("action");
-        String msg = "Action Successful";
-
-        try {
-            if ("downloadCertificate".equals(action)) {
-                handleCertificateDownload(request, response, session);
-                return; 
-            }
-
-            // --- ADMIN ACTIONS BLOCK ---
-            if ("admin".equals(userRole)) {
-                if ("create".equals(action)) {
-                    String name = request.getParameter("eventName");
-                    String date = request.getParameter("eventDate");
-                    String venue = request.getParameter("eventVenue");
-                    String goal = request.getParameter("targetGoal"); 
-
-                    int goalInt = (goal != null && !goal.trim().isEmpty()) ? Integer.parseInt(goal.trim()) : 50;
-                    String combinedVenue = venue + " | " + goalInt;
-
-                    // Pass the real number to TargetGoal column and combined string to Venue column
-                    eventDAO.createEvent(name, combinedVenue, date, goalInt); 
-                    msg = "Event Created Successfully!";
-                } 
-                else if ("delete".equals(action)) {
-                    // FIXED: This logic is now properly nested inside the Admin check
-                    int eventId = Integer.parseInt(request.getParameter("eventId"));
-                    deleteEventWithRegistrations(eventId); 
-                    msg = "Event and all associated registrations deleted.";
-                }
-            } 
-            // --- STUDENT ACTIONS BLOCK ---
-            else {
-                Student s = (Student) session.getAttribute("student");
-                String eIdParam = request.getParameter("eventId");
-                if (s != null && eIdParam != null) {
-                    int eventId = Integer.parseInt(eIdParam);
-                    
-if ("register".equals(action)) {
-    Event e = eventDAO.getEventById(eventId); 
+@Override
+protected void doPost(HttpServletRequest request, HttpServletResponse response) 
+        throws ServletException, IOException {
     
-    // Check capacity first
-    if (e != null && e.getAttendanceCount() >= e.getTargetGoal()) {
-        msg = "Error: This event is already full!";
-    } else {
-        boolean success = eventDAO.registerStudent(eventId, s.getStudentId(), s.getStudentName());
-        if(success) {
-            msg = "Registration Successful!";
-        } else {
-            // This triggers if the INSERT fails (e.g., student already registered)
-            msg = "Error: Registration failed. You might already be registered.";
-        }
-    }
-} else if ("unregister".equals(action) || "withdraw".equals(action)) {
-                        eventDAO.unregisterStudent(eventId, s.getStudentId());
-                        msg = "Withdrawn from event";
-                    }
+    HttpSession session = request.getSession();
+    String userRole = (String) session.getAttribute("userRole");
+    String action = request.getParameter("action");
+    
+    // Capture viewMode to ensure the user stays where they were
+    String viewMode = request.getParameter("viewMode");
+    if (viewMode == null) viewMode = "grid"; 
+    
+    String msg = "Action Successful"; // Default success message
 
-                    // --- REFRESH SESSION DATA ---
-                    List updatedEvents = eventDAO.getEventsByStudent(s.getStudentId());
-                    session.setAttribute("myEvents", updatedEvents);
-                    session.setAttribute("eventCount", new Integer(updatedEvents.size()));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            msg = "Error: " + e.getMessage();
+    try {
+        if ("downloadCertificate".equals(action)) {
+            handleCertificateDownload(request, response, session);
+            return; 
         }
-        
-response.sendRedirect("EventController?success=" + URLEncoder.encode(msg, "UTF-8"));    }
+
+        // --- ADMIN ACTIONS BLOCK ---
+        if ("admin".equals(userRole)) {
+            if ("create".equals(action)) {
+                String name = request.getParameter("eventName");
+                String date = request.getParameter("eventDate");
+                String venue = request.getParameter("eventVenue");
+                String goal = request.getParameter("targetGoal"); 
+
+                int goalInt = (goal != null && !goal.trim().isEmpty()) ? Integer.parseInt(goal.trim()) : 50;
+                String combinedVenue = venue + " | " + goalInt;
+
+                eventDAO.createEvent(name, combinedVenue, date, goalInt); 
+                msg = "Event Created Successfully!"; // This will trigger GREEN in JSP
+            } 
+            else if ("delete".equals(action)) {
+                int eventId = Integer.parseInt(request.getParameter("eventId"));
+                deleteEventWithRegistrations(eventId); 
+                msg = "Event and associated records deleted."; // This will trigger GREEN
+            }
+        } 
+        // --- STUDENT ACTIONS BLOCK ---
+        else {
+            Student s = (Student) session.getAttribute("student");
+            String eIdParam = request.getParameter("eventId");
+            
+            if (s != null && eIdParam != null) {
+                int eventId = Integer.parseInt(eIdParam);
+                
+                if ("register".equals(action)) {
+                    Event e = eventDAO.getEventById(eventId); 
+                    
+                    if (e != null && e.getAttendanceCount() >= e.getTargetGoal()) {
+                        msg = "Error: This event is already full!"; // This will trigger RED
+                    } else {
+                        boolean success = eventDAO.registerStudent(eventId, s.getStudentId(), s.getStudentName());
+                        if(success) {
+                            msg = "Registration Successful!"; // GREEN
+                        } else {
+                            msg = "Error: You are already registered for this event."; // RED
+                        }
+                    }
+                } 
+                else if ("unregister".equals(action) || "withdraw".equals(action)) {
+                    eventDAO.unregisterStudent(eventId, s.getStudentId());
+                    msg = "Withdrawn from event successfully."; // GREEN
+                }
+
+                // Refresh session data for progress bars and counts
+                List updatedEvents = eventDAO.getEventsByStudent(s.getStudentId());
+                session.setAttribute("myEvents", updatedEvents);
+                session.setAttribute("eventCount", new Integer(updatedEvents.size()));
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+        msg = "Error: " + e.getMessage(); // RED
+    }
+    
+    // REDIRECT with viewMode persistence and encoded message
+    response.sendRedirect("EventController?viewMode=" + viewMode + "&success=" + URLEncoder.encode(msg, "UTF-8"));
+}
 
     private void deleteEventWithRegistrations(int eventId) throws SQLException {
         Connection conn = null;
@@ -159,7 +164,7 @@ response.sendRedirect("EventController?success=" + URLEncoder.encode(msg, "UTF-8
         response.setHeader("Content-Disposition", "attachment;filename=Certificate.txt");
         PrintWriter out = response.getWriter();
         out.println("****************************************************");
-        out.println("       UNIVERSITY CLUB MANAGEMENT SOCIETY (UCMS)    ");
+        out.println("       UNIVERSITY CLUB MANAGEMENT SYSTEM (UCMS)    ");
         out.println("****************************************************");
         out.println("\n                CERTIFICATE OF ATTENDANCE              ");
         out.println("\nThis is to certify that " + student.getStudentName().toUpperCase());
