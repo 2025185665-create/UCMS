@@ -50,7 +50,7 @@
         if(stmtChart != null) try { stmtChart.close(); } catch(Exception e) {} 
         if(connChart != null) try { connChart.close(); } catch(Exception e) {} 
     }
-%> <%-- THIS WAS THE MISSING TAG --%>
+%>
 
 <!DOCTYPE html>
 <html lang="en">

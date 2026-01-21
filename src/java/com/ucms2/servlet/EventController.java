@@ -82,12 +82,14 @@ protected void doPost(HttpServletRequest request, HttpServletResponse response)
                 String combinedVenue = venue + " | " + goalInt;
 
                 eventDAO.createEvent(name, combinedVenue, date, goalInt); 
-                msg = "Event Created Successfully!"; // This will trigger GREEN in JSP
+                msg = "Event Created Successfully!";
             } 
             else if ("delete".equals(action)) {
                 int eventId = Integer.parseInt(request.getParameter("eventId"));
                 deleteEventWithRegistrations(eventId); 
-                msg = "Event and associated records deleted."; // This will trigger GREEN
+                msg = "Event and associated records deleted.";
+                List updatedEvents = eventDAO.getAllEvents();
+                session.setAttribute("totalEvents", updatedEvents.size());
             }
         } 
         // --- STUDENT ACTIONS BLOCK ---
